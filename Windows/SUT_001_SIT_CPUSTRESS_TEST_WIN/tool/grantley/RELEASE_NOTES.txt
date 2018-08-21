@@ -1,0 +1,29 @@
+RELEASE NOTES:
+
+Intel® Power Thermal Utility - BROADWELL-EP/EX
+Version: 1.3
+Release Date: 12/31/2015
+
+Version 1.2 includes the following changes:
+- Fixed the memory dimm slot detection error. 
+- Fixed the GUI to allow nearTDP in tools menu.
+
+SUPPORTED OPERATING SYSTEMS
+- Windows 2012 Server
+- Windows Server 2008 R2
+- Windows 8, 10
+
+KNOWN ISSUES AND UNSUPPORTED
+- None
+
+LEGAL / DISCLAIMERS
+
+INTEL CONFIDENTIAL
+Copyright (C) 2010-2015, Intel Corporation.  All rights reserved.
+
+Intel Corporation assumes no responsibility for errors or omissions in this document. Nor does Intel make any commitment to update the information contained herein.
+
+* Other product and corporate names may be trademarks of other companies and are used only for explanation and to the owners' benefit, without intent to infringe.
+
+Disclaimer: Core, Package and DRAM Power Meter results are to be used only for relative power comparisons and not for the TDP power design.
+

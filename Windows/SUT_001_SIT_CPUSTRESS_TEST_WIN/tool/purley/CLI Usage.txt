@@ -1,0 +1,92 @@
+>cd "C:\Program Files\Intel Corporation\Power Thermal Utility for Skylake-SP\"
+>start /wait PwrThermUtil.exe -h
+
+
+PwrThermalUtil.exe -h | [-c] [-cpu bitmask] [-cpucore[#] bitmask]
+        [-mem bitmask] [-memcore[#] bitmask] [-cp power] [-mp power]
+        [-ct cpu_test] [-mt mem_test] [-mr mem_rd] [-md mem_data]
+        [-t time] [-log log_path] [-loglvl log_level] 
+        [-b turbo]
+        [-n]
+        [-av version]
+
+        -c : Command line mode
+                Specify this option to run command line mode version.
+
+        -cpu : CPU bitmask (in hex)
+                Specify the cpu(s) in bitmask for the CPU test.
+                The default value is all 1's (64-bit).
+
+        -cpucore[#] : Core bitmask of this CPU# (in hex)
+                Specify the core(s) in bitmask for the CPU test.
+                The default value is all 1's (64-bit).
+
+        -mem : MEM bitmask (in hex)
+                Specify the cpu(s) in bitmask for the memory test.
+                The default value is all 1's (64-bit).
+
+        -memcore[#] : Core bitmask of this CPU# (in hex)
+                Specify the core(s) in bitmask for the memory test.
+                The default value is all 1's (64-bit).
+
+        -cp : CPU power level <100, 90, 80, 70, 60, 50>
+                Specify the power level to stress the CPU.
+                The default value is 100.
+                NOTE: this option is for Core power level test only.
+
+        -mp : Memory power level <100, 90, 80, 70, 60, 50>
+                Specify the power level to stress the memory.
+                The default value is 100.
+
+        -ct : CPU test selection
+                0 = None.
+                1 = TDP test.
+                2 = Core power level test.
+                3 = Core AVX test.
+                4 = PMAX test.     
+                5 = PMAX.App test.
+                The default value is 1.
+
+        -mt : Memory test selection
+                0 = None.
+                1 = Read only test.
+                2 = Write only test.
+                3 = Read/Write test.
+                The default value is 0.
+
+        -mr : Memory read/write type
+                0 = Read only.
+                1 = Write only.
+                2 = Read/Write (20/80).
+                The default value is 2.
+
+        -md : Memory data type
+                0 = All 0's.
+                1 = All 1's.
+                2 = Random data.
+                The default value is 2.
+
+        -t : Run time
+                Specify the time in seconds to run the test.
+                Run time = 0 means test will run forever.
+                The default value is 0.
+
+        -n : Enable near-TDP
+                Note: Near-TDP feature is only valid for TDP test only (-ct 1).
+
+	-b : Turbo Boost
+                Specify 0 or 1 (0=Disable Turbo, 1=Enable Turbo)
+
+        -log : Enable logging
+               Specifies the log path to store the log files.
+
+        -loglvl : Log Level
+               Specifies "1" for general log details and "2" for further core/thread breakdown.
+               The default value is 1.
+
+        -av : AVX Version
+	       Specifies which Core AVX version to use (1, 2, or 3) for CoreAVX and PMax.
+
+        -h : Help
+                Shows the version and usage.
+

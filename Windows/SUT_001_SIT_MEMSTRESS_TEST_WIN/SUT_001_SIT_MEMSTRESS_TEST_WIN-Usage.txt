@@ -1,0 +1,3 @@
+1.此脚本只有一个参数，测试总时间，单位秒。以管理员权限开始powershell之后cd到脚本所在的文件夹，直接.\SUT_001_SIT_MEMTEST_TEST_WIN_V001.ps1 total_time即可。例如测试一小时就是.\SUT_001_SIT_MEMSTRESS_TEST_WIN_V001.ps1  3600.名称中V001为版本号，随因版本变化而变化。已实际最新版为准。
+2.生成的日志保存在log文件夹下的20171212231345_SIT_MEMSTRESS_TEST_WIN 
+文件夹中。20171212231345_SIT_MEMSTRESS_TEST_WIN.log文件记录开始和截止时间。log.txt是memtest pro生成的测试日志。文件名称最开头一串数字是开始时间，随实际变化；后面V001是版本号，随实际变化。

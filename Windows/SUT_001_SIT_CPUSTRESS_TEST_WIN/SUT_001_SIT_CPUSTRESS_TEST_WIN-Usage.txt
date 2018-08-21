@@ -1,0 +1,7 @@
+1.此脚本有两个参数：第一个是测试时间，单位秒；第二个是测试平台，从purley或者grantley中二选一（目前只支持这两个平台）。
+2.使用方法：以管理员权限开始powershell之后cd到脚本所在的文件夹，直接.\SUT_001_SIT_CPUSTRESS_TEST_WIN_V001.ps1 run_time platform即可。名称中V001位版本号，随因版本变化而变化。已实际最新版为准。例如在grantley平台上测试一小时，则执行.\SUT_001_SIT_CPUSTRESS_TEST_WIN_V001.ps 3600 grantley
+3.生成的日志保存在log文件夹下的20171212231345_SIT_CPUSTRESS_TEST_WIN文件夹下：
+（1）20171212231345_SIT_CPUSTRESS_TEST_WIN.log中保存了开始和结束时间；
+（2）20171215_104518_669_PTU-CPU.csv中保存了测试过程中的PTU记录信息；
+（3）Image_MONITOR_INFO_CPUX.png（CPUX为CPU编号）为根据PTU日志生成的图片，可以直观看到CPU的频率、功耗、温度的走势。
+4.测试工具是Intel的PTU，所以只支持intel的CPU的grantley和purley。grantley的PTU版本是1P3,purley的PTU版本是1P4

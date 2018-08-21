@@ -1,0 +1,5 @@
+1.此脚本有三个参数：第一个USB的路径，如h:\;第二个是硬盘上的测试路径，如c:\123；第三个是测试次数，如1。
+2.使用方法：以管理员权限开始powershell之后cd到脚本所在的文件夹，直接.\SUT_001_SIT_USBHASH_TEST_WIN_V001.ps1 usb_path disk_path loop 即可。名称中V001位版本号，随因版本变化而变化。已实际最新版为准。例如测试三次，则执行.\SUT_001_SIT_USBHASH_TEST_WIN_V001.ps1 h:\ c:\123 3
+3.生成的日志保存在log文件夹下的20171212231345_SIT_USBHASH_TEST_WIN文件夹下：
+（1）20171212231345_SISIT_USBHASH_TEST_WIN.log中保存了开始和结束时间；以及各个阶段的hash值
+4.测试是从硬盘移动到USB开始，然后再从USB移动到硬盘。

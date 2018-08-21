@@ -1,0 +1,6 @@
+1.此脚本只有五个参数，管理员账号、管理员密码、测试类型（1=reboot;2=dc/ac）、测试总时间（单位:秒）、最大重启次数、系统下延迟试验（单位:秒）。以管理员权限开始powershell之后cd到脚本所在的文件夹，直接.\SUT_001_SIT_REBOOT_TEST_WIN_V001.ps1 管理员账号、管理员密码、测试类型（1=reboot;2=dc/ac）、测试总时间（单位:秒）、最大重启次数、系统下延迟试验（单位:秒）即可。例如测试12小时,最多500次重启，就是.\SUT_001_SIT_REBOOT_TEST_WIN_V001.ps1  administrator 1a? 1 43200 500 42。名称中V001为版本号，随因版本变化而变化。已实际最新版为准。
+2.生成的日志保存在log文件夹下的20171212231345_SIT_REBOOT_TEST_WIN 
+文件夹中。20171212231345_SIT_REBOOT_TEST_WIN.log文件记录开始和截止时间,以及测试的参数、每次重启的信息以及结果。文件名称最开头一串数字是开始时间，随实际变化；后面V001是版本号，随实际变化。
+3.如果想要半路停止测试：
+（1）只想本次停止测试，后续还需要继续测试：请在系统下在自动开启的powershell中按ctrl+c结束当次测试，然后关闭powershell和cmd窗口。如果想继续执行，测重启一次机器即可
+（2）如果想永久停止测试：先执行上面的（1），然后进入到"C:\Users\USERNAME\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup，中将reboot.cmd删除即可。其中USERNAME指代测试用的账户。

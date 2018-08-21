@@ -1,0 +1,1 @@
+Windows下持续监控BROADCOM RAID卡芯片和BBU温度的脚本，只有一个参数，为监控持续时间。
