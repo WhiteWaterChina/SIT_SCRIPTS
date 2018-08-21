@@ -1,0 +1,5 @@
+1.此脚本有两个参数，测试总时间，单位是秒；平台类型purley或者grantey。暂时只支持这两种平台 ，brickland/romley/greenlow暂不支持。如在purley上测试一小时就是执行是sh SUT_001_SIT_CPUSTRESS_TEST_RHEL_V001.sh 3600 purley即可。名称中V001位版本号，随因版本变化而变化。已实际最新版为准。
+2.测试是基于linux下ptu来测试的，所以只支持Intel对应的CPU
+3.HT必须是enable的
+4.生成的日志保存在log文件夹下的20171212231345_SIT_CPUSTRESS_TEST_RHEL文件夹中，其中20171212231345_SIT_CPUSTRESS_TEST_RHEL.log文件保存开始和结束时间，以及系统日志。cpu-ptumon-detail.csv保存了ptumon记录的详细的信息，每5秒记录一次。Image_MONITOR_INFO_CPUX.svg（X为CPU的编号，有多少个CPU就有多少个此种文件）保存了CPU的POWER/TEMPERATER/CFREQ测试过程的数据形成的图片。每个CPU一个对应的文件。
+

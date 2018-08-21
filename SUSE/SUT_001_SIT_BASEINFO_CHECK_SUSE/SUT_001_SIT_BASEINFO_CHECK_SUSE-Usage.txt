@@ -1,0 +1,3 @@
+1.此脚本无参数.直接执行sh SUT_001_SIT_BASEINFO_CHECK_SUSE_V001.sh即可。其中V001为版本号，随着实际版本变化。
+2.生成的日志保存在log文件夹下以20171212231345_SIT_BASEINFO_CHECK_RHEL.log命名的文件中.其中V001为版本号，随着实际版本变化.
+3.日志记录开始时间；OS的版本号；kernel的版本号；CPU的数量、型号、每个CPU的线程数；内存的容量；HBA卡的信息；硬盘的型号和smart信息；网口的名称和MAC地址；BMC版本号；各驱动版本号；lspci信息
