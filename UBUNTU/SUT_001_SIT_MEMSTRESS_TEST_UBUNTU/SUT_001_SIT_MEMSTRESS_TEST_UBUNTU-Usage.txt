@@ -1,0 +1,2 @@
+1.此脚本有一个参数，测试总时间，单位是秒。如测试一小时就是执行bash SUT_001_SIT_MEMSTRESS_TEST_UBUNTU_V001.sh 3600即可。名称中V001为版本号，随因版本变化而变化。以实际最新版为准。
+2.生成的日志保存在log文件夹下的20171212231345_SIT_MEMSTRESS_TEST_UBUNTU文件夹中，其中20171212231345_SIT_MEMSTRESS_TEST_UBUNTU.log文件保存开始和结束时间，已经系统日志，memtest.log中保存memtester测试过程中产生的日志。文件名称最开头一串数字是开始时间，随实际变化。
