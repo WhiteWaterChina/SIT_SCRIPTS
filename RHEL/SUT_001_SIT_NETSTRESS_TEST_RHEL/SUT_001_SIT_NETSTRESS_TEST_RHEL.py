@@ -34,7 +34,7 @@ print("Begin net stress test!Start time %s" % time_start)
 
 if len(sys.argv) != 8:
     print("Input length is incorrect!")
-    print("Usage:%s client_ctrl_ip client_username client_password sut_devicename_list client_devicename_list threads_numbertest_time" % sys.argv[0])
+    print("Usage:%s client_ctrl_ip client_username client_password sut_devicename_list client_devicename_list threads_number test_time" % sys.argv[0])
     result.write("Input length is incorrect!" + os.linesep)
     result.write("Usage:%s client_ctrl_ip client_username client_password sut_devicename_list client_devicename_list threads_number test_time" % sys.argv[0] + os.linesep)
     result.close()
@@ -75,20 +75,20 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
         os.makedirs(SutDevicePath)
 
     # calculate N
- #   speed_now_list = subprocess.Popen("ethtool %s|grep Speed|awk -F ':' '{print $2}'|awk '{match($0,/([0-9]+)/,a);print a[1]}'" % sut_devicename, shell=True, stdout=subprocess.PIPE)
- #   speed_now_list.wait()
- #   speed_now = speed_now_list.stdout.readlines()[0].strip()
-#
-#    if speed_now == "10000":
-#        N = 2
-#    elif speed_now == "25000":
-#        N = 3
-#    elif speed_now == "40000":
-#        N = 5
-#    elif speed_now == "100000":
-#        N = 11
-#    else:
-#        N = 4
+    speed_now_list = subprocess.Popen("ethtool %s|grep Speed|awk -F ':' '{print $2}'|awk '{match($0,/([0-9]+)/,a);print a[1]}'" % sut_devicename, shell=True, stdout=subprocess.PIPE)
+    speed_now_list.wait()
+    speed_now = speed_now_list.stdout.readlines()[0].strip()
+
+    if speed_now == "10000":
+        N = 2
+    elif speed_now == "25000":
+        N = 3
+    elif speed_now == "40000":
+        N = 5
+    elif speed_now == "100000":
+        N = 10
+    else:
+        N = 4
 
     logname_result_iperf_sut = SutDevicePath + "/" + "result_iperf_sut_%s.txt" % test_time
     log_result = open(logname_result_iperf_sut, mode="wb")
@@ -100,10 +100,10 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     ssh_to_client.close()
 
     # iperf -c in sut
-    subprocess.Popen("iperf -c %s -t %s -i 5 -w 256k -P %s |grep -i sum" % (client_test_ip, test_time, threads_number), shell=True, stdout=log_result)
+    subprocess.Popen("iperf -c %s -t %s -i 5 -w 256k -P %s |grep -i sum" % (client_test_ip, test_time, threads_number), shell=True, stdout=log_result, bufsize=1)
 
 
-# test if iperf3 ended in sut
+# test if iperf ended in sut
 while 1 != 2:
     check_iperf_process = subprocess.Popen('ps -aux|grep "iperf -c"|grep -v grep', shell=True, stdout=subprocess.PIPE).stdout.readlines()
     # print(check_iperf_process)
@@ -123,20 +123,20 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
         os.makedirs(SutDevicePath)
 
     # calculate N
-#    speed_now_list = subprocess.Popen("ethtool %s|grep Speed|awk -F ':' '{print $2}'|awk '{match($0,/([0-9]+)/,a);print a[1]}'" % sut_devicename, shell=True, stdout=subprocess.PIPE)
-#    speed_now_list.wait()
-#    speed_now = speed_now_list.stdout.readlines()[0].strip()
+    speed_now_list = subprocess.Popen("ethtool %s|grep Speed|awk -F ':' '{print $2}'|awk '{match($0,/([0-9]+)/,a);print a[1]}'" % sut_devicename, shell=True, stdout=subprocess.PIPE)
+    speed_now_list.wait()
+    speed_now = speed_now_list.stdout.readlines()[0].strip()
 
- #   if speed_now == "10000":
- #       N = 2
- #   elif speed_now == "25000":
- #       N = 3
- #   elif speed_now == "40000":
- #       N = 5
- #   elif speed_now == "100000":
- #       N = 11
- #   else:
- #       N = 8
+    if speed_now == "10000":
+        N = 2
+    elif speed_now == "25000":
+        N = 3
+    elif speed_now == "40000":
+        N = 5
+    elif speed_now == "100000":
+        N = 10
+    else:
+        N = 8
 
     logname_result_iperf_sut = SutDevicePath + "/" + "result_iperf_sut_1800.txt"
     log_result = open(logname_result_iperf_sut, mode="wb")
@@ -148,10 +148,10 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     ssh_to_client.close()
 
     # iperf -c in sut
-    subprocess.Popen("iperf -c %s -t 1800 -i 5 -w 256k -P %s |grep -i sum" % (client_test_ip, threads_number), shell=True, stdout=log_result)
+    subprocess.Popen("iperf -c %s -t 1800 -i 5 -w 256k -P %s |grep -i sum" % (client_test_ip, threads_number), shell=True, stdout=log_result, bufsize=1)
 
 
-# test if iperf3 ended in sut
+# test if iperf ended in sut
 while 1 != 2:
     check_iperf_process = subprocess.Popen('ps -aux|grep "iperf -c"|grep -v grep', shell=True, stdout=subprocess.PIPE).stdout.readlines()
     # print(check_iperf_process)
