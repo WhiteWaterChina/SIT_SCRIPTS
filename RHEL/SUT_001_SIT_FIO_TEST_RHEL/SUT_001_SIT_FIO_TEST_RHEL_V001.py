@@ -97,7 +97,7 @@ dfx_list_temp = subprocess.Popen("fdisk -l|grep 'Disk /dev/df'", shell=True, std
 for item_dfx in dfx_list_temp:
     dfx_name_temp = re.search(r'/dev/([a-zA-Z]+)', item_dfx)
     if dfx_name_temp is not None:
-        hdd_list.append(dfx_name_temp.groups()[0])
+        dfx_list.append(dfx_name_temp.groups()[0])
 
 # nvme
 nvme_list = []
@@ -105,7 +105,7 @@ nvme_list_temp = subprocess.Popen("fdisk -l|grep 'Disk /dev/nvme'", shell=True, 
 for item_nvme in nvme_list_temp:
     nvme_name_temp = re.search(r'/dev/([a-zA-Z]+[0-9]+n[0-9]+)', item_nvme)
     if nvme_name_temp is not None:
-        hdd_list.append(nvme_name_temp.groups()[0])
+        nvme_list.append(nvme_name_temp.groups()[0])
 
 # system disk
 df_list_temp = subprocess.Popen("df", shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE).stdout.readlines()

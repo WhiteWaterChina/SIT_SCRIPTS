@@ -13,7 +13,7 @@ import json
 import numpy
 
 
-current_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+current_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(current_path)
 time_start = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
 log_dir_name = time_start + "_SIT_NETPERF_TEST_RHEL"

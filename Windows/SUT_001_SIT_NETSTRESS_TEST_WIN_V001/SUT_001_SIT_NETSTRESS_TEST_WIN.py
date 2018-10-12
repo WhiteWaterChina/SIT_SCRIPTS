@@ -11,7 +11,8 @@ import subprocess
 import matplotlib.pyplot as plyt
 import numpy
 
-current_path = os.getcwd()
+# current_path = os.getcwd()
+current_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(current_path)
 time_start = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
 log_dir_name = time_start + "_SIT_NETSTRESS_TEST_WIN"

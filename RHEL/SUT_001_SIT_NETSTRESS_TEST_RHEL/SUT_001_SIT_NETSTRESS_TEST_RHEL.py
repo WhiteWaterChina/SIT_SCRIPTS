@@ -12,10 +12,8 @@ import paramiko
 import json
 import numpy
 
-#path = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.pardir))
-#sys.path.append(path)
 
-current_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+current_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(current_path)
 time_start = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
 log_dir_name = time_start + "_SIT_NETSTRESS_TEST_RHEL"
@@ -100,7 +98,7 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     ssh_to_client.close()
 
     # iperf -c in sut
-    subprocess.Popen("iperf -c %s -t %s -i 5 -w 256k -P %s |grep -i sum" % (client_test_ip, test_time, threads_number), shell=True, stdout=log_result, bufsize=1)
+    subprocess.Popen("iperf -c %s -t %s -i 5 -w 256k -P %s |grep -i sum" % (client_test_ip, test_time, N), shell=True, stdout=log_result, bufsize=1)
 
 
 # test if iperf ended in sut
@@ -136,7 +134,7 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     elif speed_now == "100000":
         N = 10
     else:
-        N = 8
+        N = 4
 
     logname_result_iperf_sut = SutDevicePath + "/" + "result_iperf_sut_1800.txt"
     log_result = open(logname_result_iperf_sut, mode="wb")
@@ -148,7 +146,7 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     ssh_to_client.close()
 
     # iperf -c in sut
-    subprocess.Popen("iperf -c %s -t 1800 -i 5 -w 256k -P %s |grep -i sum" % (client_test_ip, threads_number), shell=True, stdout=log_result, bufsize=1)
+    subprocess.Popen("iperf -c %s -t 1800 -i 5 -w 256k -P %s |grep -i sum" % (client_test_ip, N), shell=True, stdout=log_result, bufsize=1)
 
 
 # test if iperf ended in sut
