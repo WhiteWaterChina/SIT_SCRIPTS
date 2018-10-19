@@ -1,92 +1,107 @@
->cd "C:\Program Files\Intel Corporation\Power Thermal Utility for Skylake-SP\"
->start /wait PwrThermUtil.exe -h
+>cd "C:\Program Files\Intel Corporation\Intel Power Thermal Utility for SKX-CLX"
+>start /wait PTU.exe -h
 
 
-PwrThermalUtil.exe -h | [-c] [-cpu bitmask] [-cpucore[#] bitmask]
-        [-mem bitmask] [-memcore[#] bitmask] [-cp power] [-mp power]
-        [-ct cpu_test] [-mt mem_test] [-mr mem_rd] [-md mem_data]
-        [-t time] [-log log_path] [-loglvl log_level] 
-        [-b turbo]
-        [-n]
-        [-av version]
+Usage: PTU.exe -h | [-c]
+        [-skt bitmask] [-cpucore bitmask] [-memcore bitmask] [-pmemcore bitmask]
+        [-cp power] [-mp power]
+        [-ct cputest] [-mt memtest] [-pt pmemtest]
+        [-t time] [-log path] [-loglvl loglevel] [-logfile filename]
+        [-b turbo] [-pmem path]
 
-        -c : Command line mode
-                Specify this option to run command line mode version.
+        -c
+                Specify this option to run test in command line mode.
 
-        -cpu : CPU bitmask (in hex)
-                Specify the cpu(s) in bitmask for the CPU test.
-                The default value is all 1's (64-bit).
+        -skt <socket bitmask>
+                Specify the socket bitmask to run test. Default is all sockets.
 
-        -cpucore[#] : Core bitmask of this CPU# (in hex)
-                Specify the core(s) in bitmask for the CPU test.
-                The default value is all 1's (64-bit).
+        -cpucore <core bitmask>
+                Specify the core bitmask to use for CPU test. Default is all cores.
 
-        -mem : MEM bitmask (in hex)
-                Specify the cpu(s) in bitmask for the memory test.
-                The default value is all 1's (64-bit).
+        -memcore <core bitmask>
+                Specify the core bitmask to use for Memory test. Default is all cores.
 
-        -memcore[#] : Core bitmask of this CPU# (in hex)
-                Specify the core(s) in bitmask for the memory test.
-                The default value is all 1's (64-bit).
+        -pmemcore <core bitmask>
+                Specify the core bitmask to use for Pmem test. Default is all cores.
 
-        -cp : CPU power level <100, 90, 80, 70, 60, 50>
-                Specify the power level to stress the CPU.
-                The default value is 100.
-                NOTE: this option is for Core power level test only.
+        -cp <core power level: 100, 90, 80, 70, 60, 50>
+                Specify the power level to stress the CPU. Default is 100.
+                Notes: TDP and nTDP tests do not use this option.
 
-        -mp : Memory power level <100, 90, 80, 70, 60, 50>
-                Specify the power level to stress the memory.
-                The default value is 100.
+        -mp <memory power level: 100, 90, 80, 70, 60, 50>
+                Specify the power level to stress the memory. Default is 100.
 
-        -ct : CPU test selection
-                0 = None.
-                1 = TDP test.
-                2 = Core power level test.
-                3 = Core AVX test.
-                4 = PMAX test.     
-                5 = PMAX.App test.
+        -ct <CPU test#>
+                Specify the CPU test to stress the cores. Default is 1.
+                Notes: Near-TDP (nTDP) is intended to overvoltage the cores and it is valid only for ES part.
+
+                0: none.
+                1: TDP test.
+                2: nTDP test.
+                3: Core Non-AVX test.
+                4: Core AVX2.0 test.
+                5: Core AVX512 test.
+                6: Pmax test.
+                7: Pmax.App test.
+
+        -mt <memory test#>
+                Specify the MEM test to stress the memory. Default is 0.
+                0: none.
+                1: Seq Read test.
+                2: Seq Write test.
+                3: Seq Read/Write test.
+
+        -pt <pmem test#>
+                Specify the Pmem test to stress the DDRt DIMMs. Default is 0.
+                0: none.
+                1: Read test.
+                2: Write test.
+
+        -t <run time>
+                Specify the time in seconds to run the test.
+                Run time 0 means test will run forever. Use Ctrl-C to stop.
+                The default value is 0.
+
+        -b <0|1>
+                Enable/disable turbo.
+
+        -log <log path>
+                Enable logging and specify the path to store the log files.
+
+        -logfile <file name>
+                Specify the file name for the log files.
+
+                Note: Log filename will be auto created, if this option is not specified.
+
+        -loglvl <level>
+                Specify "1" for general log details and "2" for further core/thread breakdown.
                 The default value is 1.
 
-        -mt : Memory test selection
-                0 = None.
-                1 = Read only test.
-                2 = Write only test.
-                3 = Read/Write test.
-                The default value is 0.
+        -h
+                Show the version and usage.
 
-        -mr : Memory read/write type
-                0 = Read only.
-                1 = Write only.
-                2 = Read/Write (20/80).
-                The default value is 2.
+        -rdmsr
+                Execute MSR read.
 
-        -md : Memory data type
-                0 = All 0's.
-                1 = All 1's.
-                2 = Random data.
-                The default value is 2.
+        -wrmsr
+                Execute MSR write.
 
-        -t : Run time
-                Specify the time in seconds to run the test.
-                Run time = 0 means test will run forever.
-                The default value is 0.
+        -cpu
+                Specify the CPU number to read/write MSR. Default is 0.
 
-        -n : Enable near-TDP
-                Note: Near-TDP feature is only valid for TDP test only (-ct 1).
+        -from
+                Specify the from MSR address to rdmsr/wrmsr.
 
-	-b : Turbo Boost
-                Specify 0 or 1 (0=Disable Turbo, 1=Enable Turbo)
+        -to
+                Specify the to MSR address to rdmsr/wrmsr.
+                Note: Address must be greater than From. If nothing is specified, it uses -from address only.
 
-        -log : Enable logging
-               Specifies the log path to store the log files.
+        -start
+                Specify the starting core/thread number to rdmsr/wrmsr.
 
-        -loglvl : Log Level
-               Specifies "1" for general log details and "2" for further core/thread breakdown.
-               The default value is 1.
+        -end
+                Specify the ending core/thread number to rdmsr/wrmsr.
+                Note: Core/thread number must be greater than Start. If nothing is specified, it uses -start number only.
 
-        -av : AVX Version
-	       Specifies which Core AVX version to use (1, 2, or 3) for CoreAVX and PMax.
-
-        -h : Help
-                Shows the version and usage.
-
+        -msrdata
+                Specify the data for MSR write.

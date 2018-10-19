@@ -61,11 +61,11 @@ Write-Host "Start time: ${current_date}" -ForegroundColor Green
 #run ptu
 if ($platform -eq "purley")
 {
-.\tool\purley\PwrThermUtil.exe -c -b 1 -ct 1 -t ${run_time} -log ${log_path_dir}\ -loglvl 1|Out-Null
+.\tool\purley\PwrThermUtil.exe -c -b 1 -ct 1 -n -t ${run_time} -log ${log_path_dir}\ -loglvl 1|Out-Null
 }
 elseif ($platform -eq "grantley")
 {
-.\tool\grantley\PwrThermUtil.exe -c -ct 1 -t ${run_time} -log ${log_path_dir}\ -loglvl 1|Out-Null
+.\tool\grantley\PwrThermUtil.exe -c -ct 1 -en -t ${run_time} -log ${log_path_dir}\ -loglvl 1|Out-Null
 }
 Start-Sleep -Seconds 30
 #filter data

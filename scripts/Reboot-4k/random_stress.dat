@@ -1,0 +1,20 @@
+[global]
+direct=1
+ioengine=libaio
+time_based=1
+end_fsync=1
+ramp_time=120
+norandommap=1
+randrepeat=0
+log_avg_msec=500
+bwavgtime=500
+filename=/dev/sda3
+
+[random stress]
+numjobs=4
+iodepth=32
+rw=randrw
+bs=4k
+runtime=72h
+rwmixread=50
+

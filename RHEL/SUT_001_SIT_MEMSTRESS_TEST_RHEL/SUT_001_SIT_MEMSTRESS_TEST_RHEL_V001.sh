@@ -50,7 +50,7 @@ else
 sed -i 's/\$(INSTALLPATH)\/man\/man8/\$(INSTALLPATH)\/man\/man1/g' Makefile
 fi
 fi
-make && make install > /dev/null 2>&1
+make > /dev/null 2>&1 && make install > /dev/null 2>&1
 if [ $? != 0 ];then
 echo -e "\033[31mmemtester is installed failed!Please check if make/gcc is intalled! \033[0m"
 echo "memtester is installed failed!Please check if make/gcc is installed!" >> ${log_path}
@@ -64,7 +64,7 @@ echo "gnuplot is not installed!Please wait while install it!" >> ${log_path}
 cd tool/gnuplot/
 tar -zxf gnuplot-5.0.7.tar.gz
 cd gnuplot-5.0.7/
-./configure && make && make install > /dev/null 2>&1
+./configure > /dev/null 2>&1 && make > /dev/null 2>&1 && make install > /dev/null 2>&1
 if [ $? != 0 ];then
 echo -e "\033[31mgnuplot is installed failed!Please check if make/gcc/g++ is installed! \033[0m"
 echo "gnuplot is installed failed!Please check if make/gcc/g++ is installed!" >> ${log_path}

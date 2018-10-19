@@ -55,24 +55,13 @@ echo "gnuplot is not installed!Please wait while install it!" >> ${log_path}
 cd tool/gnuplot/
 tar -zxf gnuplot-5.0.7.tar.gz
 cd gnuplot-5.0.7/
-./configure > /dev/null 2>&1
+./configure > /dev/null 2>&1 && make > /dev/null 2>&1 && make install > /dev/null 2>&1
 if [ $? != 0 ];then
 echo -e "\033[31mgnuplot is installed failed!Please check if make/gcc/g++ is installed! \033[0m"
 echo "gnuplot is installed failed!Please check if make/gcc/g++ is installed!" >> ${log_path}
 exit 255
 fi
-make > /dev/null 2>&1
-if [ $? != 0 ];then
-echo -e "\033[31mgnuplot is installed failed!Please check if make/gcc/g++ is installed! \033[0m"
-echo "gnuplot is installed failed!Please check if make/gcc/g++ is installed!" >> ${log_path}
-exit 255
-fi
-make install > /dev/null 2>&1
-if [ $? != 0 ];then
-echo -e "\033[31mgnuplot is installed failed!Please check if make/gcc/g++ is installed! \033[0m"
-echo "gnuplot is installed failed!Please check if make/gcc/g++ is installed!" >> ${log_path}
-exit 255
-fi
+
 cd $current_path
 which gnuplot > /dev/null 2>&1
 if [ $? != 0 ];then
@@ -87,8 +76,10 @@ echo "" > /var/log/messages
 dmesg --clear > /dev/null 2>&1
 ptumon_time=$[ test_time - 20 ]
 chmod -R 777 tool
-if [ $platform == "grantley" -o $platform == "purley" ];then
-./tool/$platform/ptugen -b 1 -t ${test_time} -y -q > /dev/null 2>&1 &
+if [ $platform == "grantley" ];then
+./tool/$platform/ptugen -b 1 -ct 1 -n -t ${test_time} -y -q > /dev/null 2>&1 &
+elif [ $platform == "purley" ];then
+./tool/$platform/ptugen -b 1 -ct 1 -n -t ${test_time} -y -q > /dev/null 2>&1 &
 else
 echo -e "\033[31mPlatform input incorrect!Please check!\033[0m"
 echo "Platform input incorrect!Please check!" >> ${log_path}
@@ -96,7 +87,7 @@ exit 255
 fi
 sleep 10
 if [ $platform == "grantley" ]; then
-./tool/grantley/ptumon -d CPU -i 5000 -y -csv -t ${ptumon_time} >> ${log_path_dir}/cpu-ptumon-detail.csv
+./tool/grantley/ptumon -d CPU  -i 5000 -y -csv -t ${ptumon_time} >> ${log_path_dir}/cpu-ptumon-detail.csv
 elif [ $platform == "purley" ]; then
 ./tool/purley/ptumon -filter 0x01 -i 5000 -y -csv -t ${ptumon_time} >> ${log_path_dir}/cpu-ptumon-detail.csv
 fi

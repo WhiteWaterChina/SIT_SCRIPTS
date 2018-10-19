@@ -1,0 +1,1 @@
+mpirun -np 2 -machinefile /root/.mpd.hosts /usr/mpi/gcc/mvapich2-2.0rc1/tests/osu-micro-benchmarks-4.3/osu_bw

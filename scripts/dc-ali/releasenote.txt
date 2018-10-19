@@ -1,0 +1,4 @@
+Version:1.01
+date:2016-12-27
+Description:
+1.add Aliflash check function

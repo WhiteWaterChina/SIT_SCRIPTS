@@ -1,0 +1,3 @@
+fio /root/Reboot-4k/random_stress.dat >> /root/Reboot-4k/reboot-4k-fio.log &
+echo "********************************************************" >> /root/Reboot-4k/dmesg-speed.log
+dmesg |grep "scsi 0:0:" >> /root/Reboot-4k/dmesg-speed.log

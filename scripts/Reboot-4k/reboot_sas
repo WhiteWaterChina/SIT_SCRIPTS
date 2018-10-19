@@ -1,0 +1,445 @@
+#/bin/bash
+
+
+SYSName=`lsb_release -a | awk '/Descrip/{print}'`
+SYS=`lsb_release -a | awk '/Distributor/{print $3}'`
+SYSPart=`df -h | grep /dev/sd | awk '{print $1}'`
+SYSDisk=`echo $SYSPart | sed 's/\([^0-9]*\)\([0-9]*\)/\1/'`
+RebootDIR=`pwd`
+
+function checkrc()
+
+{
+ if [ !  -d /home/rebootfiles/ ]
+  then 
+   mkdir /home/rebootfiles/
+ fi
+ if [ !  -f /home/rebootfiles/rc.local.tmp ]
+ then 
+    #sysname=`uname -a | awk '{print $2}'`
+   if [ $SYS == "Ubuntu" ]
+     then
+        cp /etc/rc.local /home/rebootfiles/rc.local.tmp
+      # echo "the sys is $SYSName"
+    elif [ $SYS == "SUSE" ]
+       then
+       echo " The system is $SYSName"
+    elif [ -f /etc/rc.d/rc.local ]
+      then
+      #echo "The system is $SYSName"
+      cp /etc/rc.d/rc.local /home/rebootfiles/rc.local.tmp 
+    else 
+       echo "the shell doesnot support the system $SYSName"
+       exit 0
+    fi
+ else  
+ # echo " The system is $SYSName"
+  echo "success to get files!!"
+fi
+echo " The system is $SYSName"
+sleep 1
+}
+function SuseReboot()
+{
+ echo '
+#! /bin/sh
+#
+# /etc/init.d/abcd
+#
+# Copyright (c) 2000, 2001 SuSE GmbH Nuernberg, Germany.  All rights reserved.
+#
+#
+### BEGIN INIT INFO
+# Provides: abcd
+# Required-Start:
+# Should-Start: $network $syslog
+# Required-Stop: 
+# Should-Stop: $network $syslog
+# Default-Start: 2 3 5
+# Default-Stop: 0 1 4 6
+# Description: run the auto shell start
+### END INIT INFO
+echo "first to yun test......." >> /root/testfile
+bash /home/rebootfiles/powercycle.sh &
+. /etc/rc.status
+
+# First reset status of this service
+rc_reset
+case "$1" in
+    start)
+	echo "start....." >> /root/testfile
+	;;
+     stop)
+        echo "stop....." >> /root/testfile 
+        chkconfig --del linuxrestart
+        ;;
+     *)
+         echo "$1" >> /root/testfile
+        ;;
+esac
+rc_exit' > /etc/init.d/linuxrestart
+if [  -f /etc/init.d/linuxrestart ]
+  then
+    chmod 777 /etc/init.d/linuxrestart
+   ln -s /etc/init.d/linuxrestart /etc/rc.d/rc3.d/S95linuxrestart
+   ln -s /etc/init.d/linuxrestart /etc/rc.d/rc5.d/S95linuxrestart
+    chkconfig --add linuxrestart
+else
+   echo "error,Can't find the test file"
+   exit 0
+fi
+}
+function UbuntuReboot()
+{
+  cp -f /home/rebootfiles/rc.local.tmp /home/rebootfiles/rc.local.tmp1
+#ln -s /etc/init.d/reboot_test /etc/rc.d/rc3.d/S77reboot_test
+    echo 'bash /home/rebootfiles/powercycle.sh &
+    exit 0 ' > /etc/rc.local
+ }
+ function NormalReboot()
+ {
+   
+    cp -f /home/rebootfiles/rc.local.tmp /home/rebootfiles/rc.local.tmp1
+    echo "sh /home/rebootfiles/powercycle.sh &" >> /home/rebootfiles/rc.local.tmp1
+    cp -f /home/rebootfiles/rc.local.tmp1 /etc/rc.d/rc.local
+ 
+ }
+
+
+function cpuinfo()
+{
+  echo "`date` reboot" >>/root/Rebootlog/CPU.log
+  echo "CPU Number: `dmidecode -t 4 |grep CPU |wc -l`">>/root/Rebootlog/CPU.log
+  dmidecode -t 4 |grep "Current Speed" >>/root/Rebootlog/CPU.log
+  #echo "CPU Number: `cat /proc/cpuinfo |grep 'physical id'|sort|uniq|wc -l`" >>/root/Rebootlog//CPU.log
+  #cat /proc/cpuinfo |grep -A 2 "model name" >>/root/Rebootlog/CPU.log
+  echo "***********************************************" >>/root/Rebootlog/CPU.log
+}
+
+
+function Reboot()
+{ 
+ case $1 in 
+start)
+ echo '#!/bin/bash
+
+ delaytime=`cat /home/rebootfiles/T | awk '{print}'`
+ sleep $delaytime
+ echo "`date` reboot" >> /root/times
+ cat /root/times | grep reboot | wc -l | awk '{print}' >> /root/times
+ #echo $cnt >> /root/times
+
+if [ ! -d /root/Rebootlog/ ]
+ then
+  mkdir /root/Rebootlog/
+fi
+
+#diskinfo
+ echo "`date` reboot" >>/root/Rebootlog/Disk.log
+ echo "Disk Number(Including PCIE SSD): `fdisk -l|grep ^Disk.*bytes$|wc -l`">>/root/Rebootlog/Disk.log
+ for dev in `lsscsi|grep dev|awk '\''{print $NF}'\''`
+ do
+   echo "$dev" >>/root/Rebootlog/Disk.log
+   smartctl -a $dev |grep "START OF INFORMATION SECTION" -A 11 >>/root/Rebootlog/Disk.log
+   echo "$dev" >> /root/Rebootlog/DiskPowerCycleCount.log
+   smartctl -a $dev |grep Power_Cycle_Count >> /root/Rebootlog/DiskPowerCycleCount.log
+ done    
+ echo "*******************************************************************************">>/root/Rebootlog/Disk.log
+ echo "*******************************************************************************" >> /root/Rebootlog/DiskPowerCycleCount.log
+#meminfo
+ echo "`date` reboot" >>/root/Rebootlog/Memory.log
+ Manufac=`dmidecode -t memory|grep Manufacturer|grep -v NO|awk '\''{print $2}'\''|uniq`
+ echo "Memory Number: `dmidecode -t memory|grep $Manufac|wc -l`">>/root/Rebootlog/Memory.log
+ dmidecode -t memory|grep "Size\|Manufacturer\|Configured Clock Speed\|Part">>/root/Rebootlog/Memory.log   
+ echo "*******************************************************************************">>/root/Rebootlog/Memory.log
+
+#cpuinfo
+ echo "`date` reboot" >>/root/Rebootlog/CPU.log
+ echo "CPU Number: `dmidecode -t 4 |grep CPU|wc -l`">>/root/Rebootlog/CPU.log
+ dmidecode -t 4|grep "CPU\|Current Speed">>/root/Rebootlog/CPU.log
+ echo "*******************************************************************************">>/root/Rebootlog/CPU.log
+# systemctl poweroff or systemctl reboot
+ systemctl poweroff' > /home/rebootfiles/powercycle.sh
+
+  if [ ! -f /home/rebootfiles/T ]
+  then
+    echo "100" > /home/rebootfiles/T
+  fi
+  chmod 777 /home/rebootfiles/powercycle.sh
+  #SYS=`lsb_release -a | awk '/Distributor/{print $3}'`
+  if [ $SYS == "SUSE" ]
+    then
+     # echo "$SYS==suse"
+      SuseReboot
+  elif [ $SYS == "Debian" ]
+     then
+       echo "$SYS==Debian"
+        UbuntuReboot
+  elif [ $SYS == "Ubuntu" ]
+    then
+       echo "$SYS==ubuntu"
+       UbuntuReboot
+  else
+      echo "$SYS==Others"
+      NormalReboot
+  fi
+  echo $SYS
+  bash /home/rebootfiles/powercycle.sh &
+;;
+
+stop)
+
+ echo "It's will once reboot still,please wait .... "
+
+ if [ $SYS == "Ubuntu" ]
+  then
+  cp -f /home/rebootfiles/rc.local.tmp /etc/rc.local
+ elif [ $SYS == "Debian" ]
+  then
+  cp -f /home/rebootfiles/rc.local.tmp /etc/rc.local
+ elif [ $SYS == "SUSE" ]
+  then
+    chkconfig --del linuxrestart
+ else
+  cp -f /home/rebootfiles/rc.local.tmp /etc/rc.d/rc.local
+ fi
+;;
+ *)
+ echo "the canshu error"
+ exit 0
+;;
+esac
+}
+
+function partedisk()
+{
+####get sys disk and part
+fdisk -l | grep "^Disk.*bytes$" > tmp.txt
+while read line
+do
+        DEV_NAME=`echo $line | awk '{print $2}' | awk -F: '{print $1}'`
+        DEV_NAME_ALL="$DEV_NAME_ALL $DEV_NAME"
+done < tmp.txt
+
+#SYSPart=`df -h | grep /dev/sd | awk '{print $1}'`
+#SYSDisk=`echo $SYSPart | sed 's/\([^0-9]*\)\([0-9]*\)/\1/'`
+echo "The sys disk is $SYSDisk"
+
+for i in $DEV_NAME_ALL
+
+do
+  echo  "Scaning the disk $i"
+  #echo "The SYS Disk is $SYSDisk"
+ if  [ "$i" = "$SYSDisk" ]
+  then
+    #sys disk parted
+  ENDsize=`parted $SYSDisk --script print | grep "Disk /dev/sd" | awk '{print $3}'`
+  partedline=`parted $SYSDisk --script print | awk '{deadline++} END{deadline=deadline-1;print deadline}'`
+  echo $partedline
+  STARTsize=`parted $SYSDisk --script print | sed -n "$partedline,1p"|awk '{print $3}'`
+  if [ $ENDsize != $STARTsize ]
+   then
+  parted  $SYSDisk --script mkpart primary $STARTsize $ENDsize 
+  fi
+  echo "The sysDisk idel endsize $ENDsize"
+  echo "The sysDisk idel startsize $STARTsize"
+  echo "" > /home/rebootfiles/ddisk.txt
+ else
+    # echo $i >> /home/rebootfiles/ddisk.txt
+     #No sys disk will be set to gpt  
+     parted $i --script mklabel gpt 
+     parted $i --script mkpart primary 0 100% 
+     parted $i --script print
+  fi
+ done
+}
+function Get_Part()
+{
+  partedisk   
+ disk=`fdisk -l | grep "^Disk.*bytes$" | awk '{print $2}' | awk -F: '{print $1}'`
+#  partedline=`parted $SYSDisk --script print | awk '{deadline++} END{deadline=deadline-1;print deadline}'`
+#  echo $partedline
+#  SYSDiskNewPartNum=`parted $SYSDisk --script print | sed -n "$partedline,1p"|awk '{print $1}'`
+#  echo $disk-abc
+#  newpart="$SYSDisk$SYSDiskNewPartNum"
+#          echo $newpart
+#  disk="$disk $newpart"
+
+  part="/dev/sd*"
+  echo $part
+for p in $part
+  do
+    q=""
+    for d in $disk
+    do
+   if [ $p == $d ]
+    then
+     q="abcdefg"
+   fi
+  done
+  if [ "$q" == "abcdefg" ]
+   then
+    echo "$p found"
+   else
+    newpart="$newpart $p"
+  fi
+done
+part=$newpart
+echo "$part"
+# If NewPart is "boot" "swap" "system"
+for j in $part
+do
+  case $j in 
+    $SYSPart)
+     echo "found sys part $i and abort it ....countinue"
+     ;;
+    $SYSDisk)
+     echo "found sysdisk and abort it... countiune"
+     ;;
+   *)
+    New=`blkid $j | awk '{print $3}'`
+    echo "$New--blkid"
+    case $New in
+     'TYPE="swap"')
+       echo "Parted $j is $New ...abort it ...countinue"
+       #exit 0
+       ;;
+     'TYPE="boot"')
+       echo "Parted $j is $New ...abort it ...countinue"
+      # exit 0
+       ;;
+              *)
+      Allpart="$j $Allpart"
+      #echo $j >> /home/rebootfiles/dpart.txt
+      echo "scaning $j"
+       ;;
+    esac
+   ;;
+ esac
+done
+echo $Allpart > /home/rebootfiles/dpart.txt
+cat /home/rebootfiles/dpart.txt
+}
+function Get_Disk()
+{  
+ partedisk 
+ disk=`fdisk -l | grep "^Disk.*bytes$" | awk '{print $2}' | awk -F: '{print $1}'`
+ partedline=`parted $SYSDisk --script print | awk '{deadline++} END{deadline=deadline-1;print deadline}'`
+  echo $partedline
+  SYSDiskNewPartNum=`parted $SYSDisk --script print | sed -n "$partedline,1p"|awk '{print $1}'`
+  echo "All the disk are: $disk"
+  newpart="$SYSDisk$SYSDiskNewPartNum"
+ echo "The data part on sysdisk is $newpart"
+  disk="$disk $newpart"
+  echo "$disk------add sysdisk the tird part"
+# If NewPart is "boot" "swap" "system"
+for j in $disk
+do
+  case $j in 
+    $SYSPart)
+     echo "found sys part $i and abort it ....countinue"
+     ;;
+    $SYSDisk)
+     echo "found sysdisk and abort it... countiune"
+     ;;
+   *)
+    New=`blkid $j | awk '{print $3}'`
+    echo "$New--blkid"
+    case $New in
+     'TYPE="swap"')
+       echo "Parted $j is $New ...abort it ...countinue"
+       #exit 0
+       ;;
+     'TYPE="boot"')
+       echo "Parted $j is $New ...abort it ...countinue"
+      # exit 0
+       ;;
+              *)
+      Alldisk="$j $Alldisk"
+      #echo $j >> /home/rebootfiles/dpart.txt
+      echo "scaning $j"
+       ;;
+    esac
+   ;;
+ esac
+done
+echo $Alldisk > /home/rebootfiles/ddisk.txt
+cat /home/rebootfiles/ddisk.txt
+}
+
+function auto_dd()
+{
+  partedisk  
+  Reboot start
+  echo 'bash RebootDIR/reboot.sh stop
+ bash RebootDIR/reboot.sh yesdd
+ 
+'>/home/rebootfiles/powercycle.sh
+
+}
+
+function fdisk_dd()
+{
+ # fdisk -l | grep "^Disk.*bytes$" > /home/rebootfiles/tmp.txt
+#while read line
+#do
+#	DEV_NAME=`echo $line | awk '{print $2}' | awk -F: '{print $1}'`
+#	DEV_NAME_ALL="$DEV_NAME_ALL $DEV_NAME"
+#done < /home/rebootfiles/tmp.txt
+Get_Part
+DEV_NAME_ALL=`cat /home/rebootfiles/dpart.txt`
+echo "..........$DEV_NAME_ALL......"
+for i in $DEV_NAME_ALL
+do
+	dd if=$i of=/dev/null &
+done
+cpucount=`cat /proc/cpuinfo | grep processor | wc -l`
+for((i=0;i<$cpucount;i++))
+ do
+    yes >/dev/null &
+done
+
+}
+
+#main
+
+checkrc 
+case $1 in
+
+stop)
+
+Reboot stop
+
+;;
+-t)
+ echo $2 > /home/rebootfiles/T
+ echo "Set time fo reboot delay success!!"
+;;
+-h)
+
+ echo 'Please input : ./reboot.sh   , to reboot  , 
+                      ./reboot.sh stop  ,to stop reboot 
+                      ./reboot.sh -t 100  ,to set delaytime 
+                      ./reboot.sh dd   ,to start dd stress 
+                      
+ '
+
+;;
+dd)
+   fdisk_dd
+;;
+disk)
+# partedisk
+ Get_Disk
+;;
+auto)
+ # parted_dd
+ Get_Disk
+;;
+part)
+ Get_Part
+;;
+*)
+    Reboot start
+;;
+esac

@@ -46,7 +46,7 @@ client_devicenames = sys.argv[5]
 threads_number = sys.argv[6]
 test_time = sys.argv[7]
 
-#test input list length
+# test input list length
 sut_devicename_list_temp = sut_devicenames.split(";")
 client_devicename_list_temp = client_devicenames.split(";")
 sut_devicename_list = [item.strip()for item in sut_devicename_list_temp if len(item) != 0]
@@ -65,7 +65,9 @@ ssh_to_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 ssh_to_client.connect(client_ctrl_ip, 22, username=client_username, password=client_password)
 ssh_to_client.exec_command(command='iperf -s -w 256k &')
 ssh_to_client.close()
-#test for input time
+print("Start to test for %s seconds!" % test_time)
+result.write("Start to test for %s seconds!" % test_time)
+# test for input time
 for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     client_devicename = client_devicename_list[index_sut_devicename]
     SutDevicePath = log_path_dir + '/Sut' + sut_devicename
@@ -90,7 +92,7 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
 
     logname_result_iperf_sut = SutDevicePath + "/" + "result_iperf_sut_%s.txt" % test_time
     log_result = open(logname_result_iperf_sut, mode="wb")
-    #get sut test ip
+    # get sut test ip
     ssh_to_client.connect(client_ctrl_ip, 22, username=client_username, password=client_password)
     stdin_getip, stdout_getip, stderr_getip = ssh_to_client.exec_command("ip addr show|grep %s|grep inet|awk '{match($s,/([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/,a);print a[1]}'" % client_devicename)
     client_test_ip_temp = stdout_getip.readlines()
@@ -113,7 +115,9 @@ while 1 != 2:
     else:
         time.sleep(10)
 
-#test for 1800 seconds
+# test for 1800 seconds
+print("Start to test for 1800 seconds!")
+result.write("Start to test for 1800 seconds!")
 for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     client_devicename = client_devicename_list[index_sut_devicename]
     SutDevicePath = log_path_dir + '/Sut' + sut_devicename
@@ -138,7 +142,7 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
 
     logname_result_iperf_sut = SutDevicePath + "/" + "result_iperf_sut_1800.txt"
     log_result = open(logname_result_iperf_sut, mode="wb")
-    #get sut test ip
+    # get sut test ip
     ssh_to_client.connect(client_ctrl_ip, 22, username=client_username, password=client_password)
     stdin_getip_2, stdout_getip, stderr_getip_2 = ssh_to_client.exec_command("ip addr show|grep %s|grep inet|awk '{match($s,/([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/,a);print a[1]}'" % client_devicename)
     client_test_ip_temp = stdout_getip.readlines()
@@ -160,14 +164,13 @@ while 1 != 2:
         break
     else:
         time.sleep(10)
-#close iperf in client remotely
+# close iperf in client remotely
 ssh_to_client.connect(client_ctrl_ip, 22, username=client_username, password=client_password)
 ssh_to_client.exec_command(command='killall -9 iperf')
 ssh_to_client.close()
 
-#check status
-tc_result = {}
-tc_result["total_result"] = "fail"
+# check status
+tc_result = {"total_result": "fail"}
 for index_sutdevicename, sut_devicename in enumerate(sut_devicename_list):
 
     tc_result["%s" % sut_devicename] = {}
@@ -249,14 +252,14 @@ data_string = json.dumps(tc_result, sort_keys=True, indent=4)
 result.write("Below is the status check!" + os.linesep)
 result.write(data_string + os.linesep)
 
-#plot iperf result
+# plot iperf result
 image_path_dir = log_path_dir + "/image_result"
 if not os.path.isdir(image_path_dir):
     os.mkdir(image_path_dir)
-#plot iperf result for input test time
+# plot iperf result for input test time
 for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     iperf_result_list = []
-    data_time= []
+    data_time = []
     data_high_list = []
     data_low_list = []
     data_average_list = []
@@ -264,11 +267,10 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     logpath = SutDevicePath + "/" + "result_iperf_sut_%s.txt" % test_time
     data_file = open(logpath, mode="r")
     data_filter = data_file.readlines()
-    #testpath = SutDevicePath + "/" + "result_iperf_sut_test.txt"
     data_file.close()
     data_filter.pop()
     for item in data_filter:
-        iperf_data_line = re.search(r'\[SUM\] .*?(\d+\.*\d*)\s(G|M)bits/sec', item)
+        iperf_data_line = re.search(r'\[SUM\] .*?(\d+\.*\d*)\s([GM])bits/sec', item)
         if iperf_data_line is not None:
             if len(iperf_data_line.groups()) != 2:
                 continue
@@ -296,7 +298,7 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
 
     data_x = numpy.array(data_time)
     data_y = numpy.array(iperf_result_list)
-    #plot
+    # plot
     filename_to_write = sut_devicename + "_iperf_result_image_%s" % test_time
     figure_1 = plyt.figure(filename_to_write)
     figure = figure_1.add_subplot(111)
@@ -314,7 +316,7 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     filename_to_save = os.path.join(image_path_dir, filename_to_write_all)
     figure_1.savefig(filename_to_save)
 
-#plot for 1800 seconds
+# plot for 1800 seconds
 for index_sut_devicename_1800, sut_devicename_1800 in enumerate(sut_devicename_list):
     iperf_result_list_1800 = []
     data_time_1800 = []
@@ -381,5 +383,3 @@ print("End net stress test!Start time %s" % time_end)
 result.write("End net stress test!Start time %s" % time_end + os.linesep)
 result.close()
 sys.exit(0)
-
-

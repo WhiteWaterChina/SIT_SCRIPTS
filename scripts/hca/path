@@ -1,0 +1,1 @@
+export PATH=/usr/mpi/gcc/mvapich2-2.0rc1/bin/:$PATH
