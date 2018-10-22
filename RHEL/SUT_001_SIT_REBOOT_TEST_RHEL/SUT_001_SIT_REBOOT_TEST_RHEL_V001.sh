@@ -9,12 +9,13 @@
 #Function:reboot test under ubuntu
 #Parameter_1:reboot type.only "reboot"or"dc"
 #Parameter_2:total test seconds
-#Paramter_3: max test loop
-#Paramter_4: sleep time
-#Usage:bash SUT_001_SIT_REBOOT_TEST_RHEL_V001.sh Parameter_1 Parameter_2 Parameter_3　Parameter_4
+#Parameter_3: max test loop
+#Parameter_4: sleep time
+#Parameter_5: upi switch(if check upi speed)
+#Usage:bash SUT_001_SIT_REBOOT_TEST_RHEL_V001.sh Parameter_1 Parameter_2 Parameter_3　Parameter_4 Parameter_5
 #Example:
-#1.reboot  bash SUT_001_SIT_REBOOT_TEST_RHEL_V001.sh reboot 43200 500 40
-#2.dc/ac   bash SUT_001_SIT_REBOOT_TEST_RHEL_V001.sh dc 43200 500 40
+#1.reboot  bash SUT_001_SIT_REBOOT_TEST_RHEL_V001.sh reboot 43200 500 40 upi
+#2.dc/ac   bash SUT_001_SIT_REBOOT_TEST_RHEL_V001.sh dc 43200 500 40 upi
 ###############################
 
 
@@ -38,15 +39,24 @@ echo ${time_start} >> ${log_path}
 
 
 #check input!Need:1.reboot type;2.total time;3.max loop;4.sleep time;
-if [ $# != 4 ];then
-    echo -e "\033[31mInput Error! Usage:$0 reboot_type(reboot/dc) total_time(seconds)  max_loop sleep_time(seconds) \033[0m"
-    echo "Input Error! Usage:$0 reboot_type(reboot/dc) total_time(seconds)  max_loop sleep_time(seconds)" >> $log_path
+if [[ $# != 4 && $# != 5 ]];then
+    echo -e "\033[31mInput Error! Usage:$0 reboot_type(reboot/dc) total_time(seconds)  max_loop sleep_time(seconds) upi(optional) \033[0m"
+    echo "Input Error! Usage:$0 reboot_type(reboot/dc) total_time(seconds)  max_loop sleep_time(seconds) upi(optional)" >> $log_path
     exit 255
 else
+  if [ $# == 4 ];then
     reboot_type=$1
     total_time=$2
     max_loop=$3
     sleep_time=$4
+	upi_switch="0"
+  else
+    reboot_type=$1
+    total_time=$2
+    max_loop=$3
+    sleep_time=$4
+	upi_switch=$5
+  fi
 fi
 
 #write reboot type to a config file to use
@@ -63,6 +73,21 @@ echo ${log_path_dir} > /home/log_path_dir.txt
 echo ${log_file_name} > ${log_path_dir}/log_name.txt
 #write log file name to a config file
 echo ${error_file_name} > ${log_path_dir}/error_log_name.txt
+
+# check upi input
+if [[ ${upi_switch} == "0" ]];then
+  echo "No need to check UPI!" >> ${log_path}
+  echo "0" > ${log_path_dir}/upiswitch.txt
+else
+  if [[ ${upi_switch} == "upi" || ${upi_switch} == "UPI" ]];then
+    echo "Need to check UPI!" >> ${log_path}
+	echo "1" > ${log_path_dir}/upiswitch.txt
+  else
+    echo -e "\033[31mInvalid input for UPI!\033[0m"
+    echo "Invalid input for UPI!" >>${log_path}
+	exit 255
+  fi
+fi
 #generate base
 function generate_base()
 {
@@ -225,6 +250,30 @@ do
 	echo "`lspci|grep ${item_bdf}`:${speed_info}" >> ${log_path_dir}/base_pcie_speed.txt
   fi
 done
+# upi speed
+upi_switch=`cat ${log_path_dir}/upiswitch.txt|head -n 1`
+if [[ ${upi_switch} == "0" ]];then
+  echo "No need to check UPI!" >> ${log_path}
+else
+  echo -e "\033[32mBelow are the UPI info!\033[0m"
+  echo "Below are the UPI info!" >> ${log_path}
+  lspci|grep -i 205b > /dev/null
+  if [ $? != 0 ];then
+    echo -e "\033[31mCan not find UPI(205b) from lspci!\033[0m"
+    echo "Can not find UPI(205b) from lspci!" >>${log_path}	
+	exit 255
+  else
+    upilist=`lspci|grep 205b|awk '{print $1}'`
+    for upi in ${upilist[@]}
+    do
+      upispeed=`lspci -s $upi -xxx -vvv|grep d0:|awk '{print $6}'`
+	  echo "${upi}-${upispeed}"
+      echo "${upi}-${upispeed}" >> ${log_path_dir}/base_upispeed.txt
+	  echo "${upi}-${upispeed}" >> ${log_path}
+    done
+  fi
+fi
+
 #generate count file
 echo 1 > ${log_path_dir}/count.txt
 #write start seconds to 1970
@@ -262,7 +311,7 @@ now_date=`date +%Y%m%d%H%M%S`
 if [[ ${total_seconds} -gt ${total_time} || ${current_count} -gt ${max_loop} ]]; then
 echo "Total time reached!End Test!" >> ${log_path}
 rm -rf /home/log_path_dir.txt
-rm -rf  ${log_path_dir}/base* ${log_path_dir}/reboot_type.txt ${log_path_dir}/log_name.txt ${log_path_dir}/total_time.txt ${log_path_dir}/max_loop.txt ${log_path_dir}/sleep_time.txt ${log_path_dir}/start_seconds.txt /home/reboot.sh
+rm -rf  ${log_path_dir}/base* ${log_path_dir}/reboot_type.txt ${log_path_dir}/log_name.txt ${log_path_dir}/total_time.txt ${log_path_dir}/max_loop.txt ${log_path_dir}/sleep_time.txt ${log_path_dir}/start_seconds.txt /home/reboot.sh ${log_path_dir}/upiswitch.txt
 rm -rf /etc/rc.d/rc.local
 rm -rf ${log_path_dir}/error_log_name.txt
 echo "End Test!End Time:${now_date}" >> ${log_path}
@@ -461,6 +510,27 @@ do
   fi
 done
 
+# upi speed
+rm -rf ${log_path_dir}/upispeedstatus.txt
+echo "Below is the UPI Speed info！" >> ${log_path}
+upi_switch=`cat ${log_path_dir}/upiswitch.txt|head -n 1`
+if [[ ${upi_switch} == "0" ]];then
+  echo "No need to check UPI!" >> ${log_path}
+else
+  upilist=`lspci|grep 205b|awk '{print $1}'`
+  for upi in ${upilist[@]}
+  do
+    upispeed=`lspci -s $upi -xxx -vvv|grep d0:|awk '{print $6}'`
+	echo "$upi-$upispeed" >> ${log_path}
+	base_upispeed=`cat ${log_path_dir}/base_upispeed.txt|grep $upi|awk -F "-" '{print $2}'`
+	if [[ ${upispeed} != ${base_upispeed} ]];then
+	  echo "UPI Speed for ${upi} check fail!Need: ${base_upispeed}; but now:${upispeed}!" >> ${error_log_path}
+	  echo "fail" >> ${log_path_dir}/upispeedstatus.txt
+	else
+	  echo "pass" >> ${log_path_dir}/upispeedstatus.txt
+	fi
+  done
+fi
 #generate md5sum
 #base
 md5_base_cpu_number=`md5sum ${log_path_dir}/base_cpu_number.txt|awk '{print $1}'|sed 's/ //g'`
@@ -609,7 +679,6 @@ rm -rf ${log_path_dir}/sizestatus.txt
 
 #check pcie speed status
 pciespeed_status=`cat ${log_path_dir}/pciespeedstatus.txt|grep fail|wc -l`
-echo ${pciespeed_status} >> /tmp/1.txt
 if [[ ${pciespeed_status} != 0 ]];then
   echo "fail" >> ${log_path_dir}/status.txt
   echo "PCIe Speed test fail" >> ${log_path}
@@ -619,11 +688,26 @@ else
 fi
 rm -rf ${log_path_dir}/pciespeedstatus.txt
 
+#check upi speed status
+upi_switch=`cat ${log_path_dir}/upiswitch.txt|head -n 1`
+if [[ ${upi_switch} == "1" ]];then
+  upispeed_status=`cat ${log_path_dir}/upispeedstatus.txt|grep fail|wc -l`
+  if [[ ${upispeed_status} != 0 ]];then
+    echo "fail" >> ${log_path_dir}/status.txt
+    echo "UPI Speed test fail" >> ${log_path}
+  else
+    echo "pass" >> ${log_path_dir}/status.txt
+    echo "UPI Speed test pass" >> ${log_path}
+  fi
+fi
+rm -rf ${log_path_dir}/upispeedstatus.txt
+
+
 cat ${log_path_dir}/status.txt|grep fail > /dev/null 2>&1
 if [ $? == 0 ];then
-echo "FAIL!" >> ${log_path}
+  echo "FAIL!" >> ${log_path}
 else
-echo "PASS!" >> ${log_path}
+  echo "PASS!" >> ${log_path}
 fi
 count_next=$[ current_count + 1 ] 
 echo $count_next > ${log_path_dir}/count.txt
@@ -637,6 +721,8 @@ reboot
 fi
 EOF
 
+
+# main
 generate_base
 echo -e "\033[32mThe Base infomation is shown above! Please check it and input y/Y to contiune or n/N to break test!"
 read confirm
@@ -655,6 +741,6 @@ if [[ $confirm == "y" || $confirm == "Y" ]];then
   fi
 else
   echo -e "\033[31mThe Base information is incorrect,and we will break the test!\033[0m"
-  rm -rf /home/log_path_dir.txt /home/reboot.sh
+  rm -rf /home/log_path_dir.txt /home/reboot.sh ${log_path_dir}/upiswitch.txt
   exit 255
 fi

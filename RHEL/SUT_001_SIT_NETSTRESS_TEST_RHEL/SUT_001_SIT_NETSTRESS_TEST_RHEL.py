@@ -1,5 +1,5 @@
 #Author:Ward Yan
-###usage: client_ctrl_ip client_username client_password sut_devicename_list client_devicename_list threads_number test_time
+###usage: client_ctrl_ip client_username client_password sut_devicename_list client_devicename_list test_time
 import matplotlib
 matplotlib.use('Agg')
 import os
@@ -12,6 +12,57 @@ import paramiko
 import json
 import numpy
 
+
+def plot_image(log_path_sub, figure_title, filepath_to_save):
+    iperf_result_list = []
+    data_time = []
+    data_high_list = []
+    data_low_list = []
+    data_average_list = []
+    data_file = open(log_path_sub, mode="r")
+    data_filter = data_file.readlines()
+    data_file.close()
+    data_filter.pop()
+    for item in data_filter:
+        iperf_data_line = re.search(r'\[SUM\] .*?(\d+\.*\d*)\s([GM])bits/sec', item)
+        if iperf_data_line is not None:
+            if len(iperf_data_line.groups()) != 2:
+                continue
+            else:
+                if iperf_data_line.groups()[1] == "M":
+                    data_one_line = float(iperf_data_line.groups()[0]) / 1000
+                else:
+                    data_one_line = float(iperf_data_line.groups()[0])
+                iperf_result_list.append(data_one_line)
+    average_data = float(sum(iperf_result_list)) / float(len(iperf_result_list))
+    data_high = average_data * 1.1
+    data_low = average_data * 0.9
+    data_higest = max(iperf_result_list)
+    # index_higest = iperf_result_list.index(data_higest)
+    data_lowest = min(iperf_result_list)
+    # index_lowest = iperf_result_list.index(data_lowest)
+    for i in range(1, len(iperf_result_list) + 1):
+        data_time.append(i * 5)
+    for count in range(len(iperf_result_list)):
+        data_high_list.append(data_high)
+        data_low_list.append(data_low)
+        data_average_list.append(average_data)
+    data_x = numpy.array(data_time)
+    data_y = numpy.array(iperf_result_list)
+    # plot
+    figure_1 = plyt.figure(figure_title)
+    figure_1.add_subplot(111)
+    plyt.title(figure_title)
+    plyt.xlabel('time(s)')
+    plyt.ylabel('Speed(Gbits/s)')
+    plyt.plot(data_x, data_y, label='Actul Speed')
+    plyt.plot(data_x, numpy.array(data_high_list), label='110% Average')
+    plyt.plot(data_x, numpy.array(data_low_list), label='90% Average')
+    plyt.plot(data_x, numpy.array(data_average_list), label='Average')
+    leg = plyt.legend(loc='best', ncol=2, mode="expand", shadow=False, fancybox=True)
+    leg.get_frame().set_alpha(0.5)
+    time.sleep(1)
+    figure_1.savefig(filepath_to_save)
 
 current_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(current_path)
@@ -30,11 +81,11 @@ result = open(log_path, mode="w")
 result.write("Begin net stress test!Start time %s" % time_start + os.linesep)
 print("Begin net stress test!Start time %s" % time_start)
 
-if len(sys.argv) != 8:
+if len(sys.argv) != 7:
     print("Input length is incorrect!")
-    print("Usage:%s client_ctrl_ip client_username client_password sut_devicename_list client_devicename_list threads_number test_time" % sys.argv[0])
+    print("Usage:%s client_ctrl_ip client_username client_password sut_devicename_list client_devicename_list test_time" % sys.argv[0])
     result.write("Input length is incorrect!" + os.linesep)
-    result.write("Usage:%s client_ctrl_ip client_username client_password sut_devicename_list client_devicename_list threads_number test_time" % sys.argv[0] + os.linesep)
+    result.write("Usage:%s client_ctrl_ip client_username client_password sut_devicename_list client_devicename_list test_time" % sys.argv[0] + os.linesep)
     result.close()
     sys.exit(255)
 
@@ -43,8 +94,8 @@ client_username = sys.argv[2]
 client_password = sys.argv[3]
 sut_devicenames = sys.argv[4]
 client_devicenames = sys.argv[5]
-threads_number = sys.argv[6]
-test_time = sys.argv[7]
+# threads_number = sys.argv[6]
+test_time = sys.argv[6]
 
 # test input list length
 sut_devicename_list_temp = sut_devicenames.split(";")
@@ -256,126 +307,24 @@ result.write(data_string + os.linesep)
 image_path_dir = log_path_dir + "/image_result"
 if not os.path.isdir(image_path_dir):
     os.mkdir(image_path_dir)
+
 # plot iperf result for input test time
 for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
-    iperf_result_list = []
-    data_time = []
-    data_high_list = []
-    data_low_list = []
-    data_average_list = []
-    SutDevicePath = log_path_dir + '/Sut' + sut_devicename
-    logpath = SutDevicePath + "/" + "result_iperf_sut_%s.txt" % test_time
-    data_file = open(logpath, mode="r")
-    data_filter = data_file.readlines()
-    data_file.close()
-    data_filter.pop()
-    for item in data_filter:
-        iperf_data_line = re.search(r'\[SUM\] .*?(\d+\.*\d*)\s([GM])bits/sec', item)
-        if iperf_data_line is not None:
-            if len(iperf_data_line.groups()) != 2:
-                continue
-            else:
-                if iperf_data_line.groups()[1] == "M":
-                    data_one_line = float(iperf_data_line.groups()[0]) / 1000
-                else:
-                    data_one_line = float(iperf_data_line.groups()[0])
-                iperf_result_list.append(data_one_line)
-    average_data = float(sum(iperf_result_list)) / float(len(iperf_result_list))
-    data_high = average_data * 1.1
-    data_low = average_data * 0.9
-    data_higest = max(iperf_result_list)
-    index_higest = iperf_result_list.index(data_higest)
-    data_lowest = min(iperf_result_list)
-    index_lowest = iperf_result_list.index(data_lowest)
-
-    for i in range(1, len(iperf_result_list) + 1):
-        data_time.append(i*5)
-
-    for count in range(len(iperf_result_list)):
-        data_high_list.append(data_high)
-        data_low_list.append(data_low)
-        data_average_list.append(average_data)
-
-    data_x = numpy.array(data_time)
-    data_y = numpy.array(iperf_result_list)
-    # plot
-    filename_to_write = sut_devicename + "_iperf_result_image_%s" % test_time
-    figure_1 = plyt.figure(filename_to_write)
-    figure = figure_1.add_subplot(111)
-    plyt.title(sut_devicename + "_iperf_result_image_%s" % test_time)
-    plyt.xlabel('time(s)')
-    plyt.ylabel('Speed(Gbits/s)')
-    plyt.plot(data_x, data_y, label='Actul Speed')
-    plyt.plot(data_x, numpy.array(data_high_list), label='110% Average')
-    plyt.plot(data_x, numpy.array(data_low_list), label='90% Average')
-    plyt.plot(data_x, numpy.array(data_average_list), label='Average')
-    leg = plyt.legend(loc='best', ncol=2, mode="expand", shadow=False, fancybox=True)
-    leg.get_frame().set_alpha(0.5)
-    time.sleep(1)
-    filename_to_write_all = filename_to_write + '.png'
-    filename_to_save = os.path.join(image_path_dir, filename_to_write_all)
-    figure_1.savefig(filename_to_save)
+    sutDevicePathInputTime = log_path_dir + '/Sut' + sut_devicename
+    sutLogPathInputTime = sutDevicePathInputTime + "/" + "result_iperf_sut_%s.txt" % test_time
+    sutFigureTitleInputTime = "Sut2Client_" + sut_devicename + "_iperf_result_image_%ss" % test_time
+    sutFilenameToWriteInputTime = sutFigureTitleInputTime + '.png'
+    sutFilenameToSaveInputTime = os.path.join(image_path_dir, sutFilenameToWriteInputTime)
+    plot_image(sutLogPathInputTime, sutFigureTitleInputTime, sutFilenameToSaveInputTime)
 
 # plot for 1800 seconds
 for index_sut_devicename_1800, sut_devicename_1800 in enumerate(sut_devicename_list):
-    iperf_result_list_1800 = []
-    data_time_1800 = []
-    data_high_list_1800 = []
-    data_low_list_1800 = []
-    data_average_list_1800 = []
-    SutDevicePath_1800 = log_path_dir + '/Sut' + sut_devicename_1800
-    logpath_1800 = SutDevicePath_1800 + "/" + "result_iperf_sut_1800.txt"
-    data_file_1800 = open(logpath_1800, mode="r")
-    data_filter_1800 = data_file_1800.readlines()
-    #testpath = SutDevicePath + "/" + "result_iperf_sut_test.txt"
-    data_file_1800.close()
-    data_filter_1800.pop()
-    for item_1800 in data_filter_1800:
-        iperf_data_line_1800 = re.search(r'\[SUM\] .*?(\d+\.*\d*)\s(G|M)bits/sec', item_1800)
-        if iperf_data_line_1800 is not None:
-            if len(iperf_data_line_1800.groups()) != 2:
-                continue
-            else:
-                if iperf_data_line_1800.groups()[1] == "M":
-                    data_one_line_1800 = float(iperf_data_line_1800.groups()[0]) / 1000
-                else:
-                    data_one_line_1800 = float(iperf_data_line_1800.groups()[0])
-                iperf_result_list_1800.append(data_one_line_1800)
-    average_data_1800 = float(sum(iperf_result_list_1800)) / float(len(iperf_result_list_1800))
-    data_high_1800 = average_data_1800 * 1.1
-    data_low_1800 = average_data_1800 * 0.9
-    data_higest_1800 = max(iperf_result_list_1800)
-    index_higest_1800 = iperf_result_list_1800.index(data_higest_1800)
-    data_lowest_1800 = min(iperf_result_list_1800)
-    index_lowest_1800 = iperf_result_list_1800.index(data_lowest_1800)
-
-    for i in range(1, len(iperf_result_list_1800) + 1):
-        data_time_1800.append(i * 5)
-
-    for count_1800 in range(len(iperf_result_list_1800)):
-        data_high_list_1800.append(data_high_1800)
-        data_low_list_1800.append(data_low_1800)
-        data_average_list_1800.append(average_data_1800)
-
-    data_x_1800 = numpy.array(data_time_1800)
-    data_y_1800 = numpy.array(iperf_result_list_1800)
-    # plot
-    filename_to_write_1800 = sut_devicename_1800 + "_iperf_result_image_1800"
-    figure_1_1800 = plyt.figure(filename_to_write_1800)
-    figure_1800 = figure_1_1800.add_subplot(111)
-    plyt.title(sut_devicename_1800 + "_iperf_result_image_1800")
-    plyt.xlabel('time(s)')
-    plyt.ylabel('Speed(Gbits/s)')
-    plyt.plot(data_x_1800, data_y_1800, label='Actul Speed')
-    plyt.plot(data_x_1800, numpy.array(data_high_list_1800), label='110% Average')
-    plyt.plot(data_x_1800, numpy.array(data_low_list_1800), label='90% Average')
-    plyt.plot(data_x_1800, numpy.array(data_average_list_1800), label='Average')
-    leg = plyt.legend(loc='best', ncol=2, mode="expand", shadow=False, fancybox=True)
-    leg.get_frame().set_alpha(0.5)
-    time.sleep(1)
-    filename_to_write_all_1800 = filename_to_write_1800 + '.png'
-    filename_to_save_1800 = os.path.join(image_path_dir, filename_to_write_all_1800)
-    figure_1_1800.savefig(filename_to_save_1800)
+    sutDevicePath1800 = log_path_dir + '/Sut' + sut_devicename_1800
+    sutLogPath1800 = sutDevicePath1800 + "/" + "result_iperf_sut_1800.txt"
+    sutFigureTitle1800 = "Sut2Client_" + sut_devicename_1800 + "_iperf_result_image_1800s"
+    sutFilenameToWrite1800 = sutFigureTitle1800 + '.png'
+    sutFilenameToSave1800 = os.path.join(image_path_dir, sutFilenameToWrite1800)
+    plot_image(sutLogPath1800, sutFigureTitle1800, sutFilenameToSave1800)
 
 
 time_end = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
