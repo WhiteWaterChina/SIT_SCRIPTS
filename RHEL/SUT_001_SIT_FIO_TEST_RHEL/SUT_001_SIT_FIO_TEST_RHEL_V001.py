@@ -115,7 +115,7 @@ for item_df in df_list_temp:
         sysdisk_temp = item_df
         break
 
-sysdisk_name_temp = re.search(r'/dev/([a-zA-Z]+[[0-9]+n[0-9]+]*)', sysdisk_temp).groups()[0]
+sysdisk_name_temp = re.search(r'/dev/([a-zA-Z]+[[0-9]+n*[0-9]*]*)', sysdisk_temp).groups()[0]
 if sysdisk_name_temp is not None:
     sysdisk_flag = sysdisk_name_temp[:2]
 else:
@@ -124,7 +124,7 @@ else:
     exit(255)
 # filter disk list to except system disk name
 if sysdisk_flag == "nv":
-    sysdisk_name = re.search(r'([a-zA-Z]+[[0-9]+n[0-9]+]*)', sysdisk_name_temp).groups()[0]
+    sysdisk_name = re.search(r'([a-zA-Z]+[[0-9]+n*[0-9]*]*)', sysdisk_name_temp).groups()[0]
     nvme_list_final = [item for item in nvme_list if item != sysdisk_name]
     hdd_list_final = hdd_list
     dfx_list_final = dfx_list
@@ -187,7 +187,7 @@ for diskname in diskname_list:
             file_handler.write("write_iops_log=%s-%s-%s" % (policy, block, diskname) + os.linesep)
             file_handler.write("write_lat_log=%s-%s-%s" % (policy, block, diskname) + os.linesep)
             file_handler.write("numjobs=1" + os.linesep)
-            file_handler.write("timeout=8800" + os.linesep)
+            file_handler.write("timeout=88888" + os.linesep)
             file_handler.write("runtime=%s" % time_every_policy + os.linesep)
             file_handler.write("[%s]" % policy + os.linesep)
             file_handler.write("filename=/dev/%s" % diskname)
