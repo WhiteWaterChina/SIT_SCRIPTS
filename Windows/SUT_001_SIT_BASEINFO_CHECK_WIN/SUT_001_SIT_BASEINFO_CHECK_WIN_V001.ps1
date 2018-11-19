@@ -48,7 +48,7 @@ Write-Host "Below is the CPU Info!" -ForegroundColor Green
 #Get-WmiObject win32_processor|where {$_.status -eq "OK"}|Sort-Object -Property deviceid|Select-Object -ExpandProperty numberofcores
 #Write-Host "Below is the CPU Threads Number of Each CPU!" -ForegroundColor Green
 #Get-WmiObject win32_processor|where {$_.status -eq "OK"}|Sort-Object -Property deviceid|Select-Object -ExpandProperty NumberOfLogicalProcessors
-Get-WmiObject win32_processor|where {$_.status -eq "OK"}|Sort-Object -Property deviceid|Format-Table Name,@{name="HardwareCores";expression={$_.numberofcores}},@{name="LogicalCores";expression={$_.NumberOfLogicalProcessors}}
+Get-WmiObject win32_processor|where {$_.status -eq "OK"}|Format-Table @{name="Position";expression={$_.deviceid}}, @{name="Model";expression={$_.name}},@{name="HardwareCores";expression={$_.numberofcores}},@{name="LogicalCores";expression={$_.NumberOfLogicalProcessors}},@{name="MaxSpeed(MHz)";expression={$_.MaxClockSpeed}},@{name="L2CacheSize";expression={$_.L2CacheSize}},@{name="L3CacheSize";expression={$_.L3CacheSize}}
 
 #write info to the log file!
 echo "Below is the CPU Info"|Out-File -Append -Force "$log_path"
@@ -58,7 +58,7 @@ echo "Below is the CPU Info"|Out-File -Append -Force "$log_path"
 #(Get-WmiObject win32_processor|where {$_.status -eq "OK"}|Sort-Object -Property deviceid|Select-Object -ExpandProperty numberofcores)|Out-File -Append -Force "$log_path"
 #echo "Below is the CPU Threads Number!"|Out-File -Append -Force "$log_path"
 #(Get-WmiObject win32_processor|where {$_.status -eq "OK"}|Sort-Object -Property deviceid|Select-Object -ExpandProperty NumberOfLogicalProcessors)|Out-File -Append -Force "$log_path"
-(Get-WmiObject win32_processor|where {$_.status -eq "OK"}|Sort-Object -Property deviceid|Format-Table Name,@{name="HardwareCores";expression={$_.numberofcores}},@{name="LogicalCores";expression={$_.NumberOfLogicalProcessors}})|Out-File -Append -Force "$log_path"
+Get-WmiObject win32_processor|where {$_.status -eq "OK"}|Format-Table @{name="Position";expression={$_.deviceid}}, @{name="Model";expression={$_.name}},@{name="HardwareCores";expression={$_.numberofcores}},@{name="LogicalCores";expression={$_.NumberOfLogicalProcessors}},@{name="MaxSpeed(MHz)";expression={$_.MaxClockSpeed}},@{name="L2CacheSize";expression={$_.L2CacheSize}},@{name="L3CacheSize";expression={$_.L3CacheSize}}|Out-File -Append -Force "$log_path"
 #mem info
 Write-Host "Below is the MEM Info!" -ForegroundColor Green
 msinfo32 /report c:\sysinfo.txt

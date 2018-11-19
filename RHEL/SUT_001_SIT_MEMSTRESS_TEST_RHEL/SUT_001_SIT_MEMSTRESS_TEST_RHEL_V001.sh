@@ -30,11 +30,11 @@ echo ${time_start} >> ${log_path}
 echo -e "\033[32mBegin memtester test! Start time:${time_start} \033[0m"
 #check input!
 if [ $# != 1 ];then
-echo -e "\033[31mInput Error! Usage:$0 sleep_time(seconds) \033[0m"
-echo "Input Error! Usage:$0 sleep_time(seconds)" >> $log_path
-exit 255
+  echo -e "\033[31mInput Error! Usage:$0 sleep_time(seconds) \033[0m"
+  echo "Input Error! Usage:$0 sleep_time(seconds)" >> $log_path
+  exit 255
 else
-sleep_time=$1
+  sleep_time=$1
 fi
 chmod -R 777 tool
 #install memtester-4.3.0
@@ -44,39 +44,39 @@ cd memtester-4.3.0
 
 #test if /usr/local/man/man8 is exist
 if [ ! -d /usr/local/man/man8 ]; then
-if [ ! -d /usr/local/man/man1 ]; then
-mkdir -p /usr/local/man/man8
-else
-sed -i 's/\$(INSTALLPATH)\/man\/man8/\$(INSTALLPATH)\/man\/man1/g' Makefile
-fi
+  if [ ! -d /usr/local/man/man1 ]; then
+    mkdir -p /usr/local/man/man8
+  else
+    sed -i 's/\$(INSTALLPATH)\/man\/man8/\$(INSTALLPATH)\/man\/man1/g' Makefile
+  fi
 fi
 make > /dev/null 2>&1 && make install > /dev/null 2>&1
 if [ $? != 0 ];then
-echo -e "\033[31mmemtester is installed failed!Please check if make/gcc is intalled! \033[0m"
-echo "memtester is installed failed!Please check if make/gcc is installed!" >> ${log_path}
-exit 255
+  echo -e "\033[31mmemtester is installed failed!Please check if make/gcc is intalled! \033[0m"
+  echo "memtester is installed failed!Please check if make/gcc is installed!" >> ${log_path}
+  exit 255
 fi
 #install gnuplot
 which gnuplot > /dev/null 2>&1
 if [ $? != 0 ];then
-echo -e "\033[31mgnuplot is not installed!Please wait while  install it!\033[0m"
-echo "gnuplot is not installed!Please wait while install it!" >> ${log_path}
-cd tool/gnuplot/
-tar -zxf gnuplot-5.0.7.tar.gz
-cd gnuplot-5.0.7/
-./configure > /dev/null 2>&1 && make > /dev/null 2>&1 && make install > /dev/null 2>&1
-if [ $? != 0 ];then
-echo -e "\033[31mgnuplot is installed failed!Please check if make/gcc/g++ is installed! \033[0m"
-echo "gnuplot is installed failed!Please check if make/gcc/g++ is installed!" >> ${log_path}
-exit 255
-fi
-cd $current_path
-which gnuplot > /dev/null 2>&1
-if [ $? != 0 ];then
-echo -e "\033[31mgnuplot is installed failed! \033[0m"
-echo "gnuplot is installed failed!" >> ${log_path}
-exit 255
-fi
+  echo -e "\033[31mgnuplot is not installed!Please wait while  install it!\033[0m"
+  echo "gnuplot is not installed!Please wait while install it!" >> ${log_path}
+  cd tool/gnuplot/
+  tar -zxf gnuplot-5.0.7.tar.gz
+  cd gnuplot-5.0.7/
+  ./configure > /dev/null 2>&1 && make > /dev/null 2>&1 && make install > /dev/null 2>&1
+  if [ $? != 0 ];then
+    echo -e "\033[31mgnuplot is installed failed!Please check if make/gcc/g++ is installed! \033[0m"
+    echo "gnuplot is installed failed!Please check if make/gcc/g++ is installed!" >> ${log_path}
+    exit 255
+  fi
+  cd $current_path
+  which gnuplot > /dev/null 2>&1
+  if [ $? != 0 ];then
+    echo -e "\033[31mgnuplot is installed failed! \033[0m"
+    echo "gnuplot is installed failed!" >> ${log_path}
+    exit 255
+  fi
 fi
 CPU=`cat /proc/cpuinfo |grep process |wc -l`
 FREE_MEM1=`free |grep Mem |awk -F ' ' '{print $4}'`
@@ -94,7 +94,7 @@ echo "" > /var/log/messages
 dmesg --clear >/dev/null 2>&1
 for i in `cat 1.txt`
 do
-	memtester $TEST_MEM 10000 >> ${log_path_dir}/memtest.log &
+  memtester $TEST_MEM 10000 >> ${log_path_dir}/memtest.log &
 done 
 rm -rf 1.txt
 
@@ -108,16 +108,16 @@ free -w -k -s 1 -c ${mon_time}|grep Mem >> ${log_path_dir}/mem-use.txt
 total_line=`cat ${log_path_dir}/mem-use.txt|wc -l`
 while read line
 do
-total=`echo $line|awk '{print $2}'|awk '{printf "%.2f",$NF}'`
-used=`echo $line|awk '{print $3}'|awk '{printf "%.2f",$NF}'`
-usage=$(echo "scale=2;$used/$total"|bc)
-echo $usage >> ${log_path_dir}/mem-filter.txt
+  total=`echo $line|awk '{print $2}'|awk '{printf "%.2f",$NF}'`
+  used=`echo $line|awk '{print $3}'|awk '{printf "%.2f",$NF}'`
+  usage=$(echo "scale=2;$used/$total"|bc)
+  echo $usage >> ${log_path_dir}/mem-filter.txt
 done < ${log_path_dir}/mem-use.txt
 #length of the file
 #timestamp
 for ((i=0;i<${total_line};i++))
 do
-echo $i >> ${log_path_dir}/timestamp.txt
+  echo $i >> ${log_path_dir}/timestamp.txt
 done
 #paste
 paste -d "," ${log_path_dir}/timestamp.txt ${log_path_dir}/mem-filter.txt > ${log_path_dir}/mem.txt
@@ -157,17 +157,17 @@ echo "Below are the system log after filter!" >> ${log_path}
 echo "Below is the messages file content!" >> ${log_path}
 #/var/log/syslog
 if [ ! -f /var/log/messages ];then
-echo -e "\033[31m/var/log/messages is not exist! Skip it! \033[0m"
-echo "/var/log/messages is not exist! Skip it!" >> ${log_path}
+  echo -e "\033[31m/var/log/messages is not exist! Skip it! \033[0m"
+  echo "/var/log/messages is not exist! Skip it!" >> ${log_path}
 else
-cat /var/log/messages |grep -E -i "timeout|hard reset|unknow|throttle|hardware error|buffer i/o error|fail|error|critical" |grep -v -i "partition" >> ${log_path}
+  cat /var/log/messages |grep -E -i "timeout|hard reset|unknow|throttle|hardware error|buffer i/o error|fail|error|critical" |grep -v -i "partition" >> ${log_path}
 fi
 #/var/log/mcelog
 if [ ! -f /var/log/mcelog ];then
-echo -e "\033[31m/var/log/mcelog is not exist! Skip it! \033[0m"
-echo "/var/log/mcelog is not exist! Skip it!" >> ${log_path}
+  echo -e "\033[31m/var/log/mcelog is not exist! Skip it! \033[0m"
+  echo "/var/log/mcelog is not exist! Skip it!" >> ${log_path}
 else
-cat /var/log/mcelog |grep -E -i "MCE|fail|error|critical" >> ${log_path}
+  cat /var/log/mcelog |grep -E -i "MCE|fail|error|critical" >> ${log_path}
 fi
 #dmesg
 dmesg|grep -E -i "timeout|hard reset|unknow|throttle" |grep -v -E -i "partition|support|part|fail|error|critical" >> ${log_path}

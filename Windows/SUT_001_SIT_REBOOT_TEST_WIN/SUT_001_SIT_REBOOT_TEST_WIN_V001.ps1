@@ -672,7 +672,7 @@ Remove-Item -Path "C:\Users\Administrator\AppData\Roaming\Microsoft\Windows\Star
 
 
 #main
-$host.UI.RawUI.BufferSize = new-object System.Management.Automation.Host.Size(175,20000)
+$host.UI.RawUI.BufferSize = new-object System.Management.Automation.Host.Size(1750,20000)
 #create log 
 $current_path=Split-Path -Parent $MyInvocation.MyCommand.Definition
 if (-not (Test-Path ${current_path}\log -PathType Container))

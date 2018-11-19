@@ -30,8 +30,10 @@ current_path=`pwd`
 log_path_dir="${current_path}/log/${log_dir_name}"
 log_path="${current_path}/log/${log_dir_name}/${log_file_name}"
 error_log_path="${current_path}/log/${log_dir_name}/${error_file_name}"
+dmesg_log_path="${current_path}/log/${log_dir_name}/dmesg-log"
 
 mkdir -p ${log_path_dir}
+mkdir -p ${dmesg_log_path}
 touch ${log_path}
 # write  start time
 echo "Start Testing Time!" >> ${log_path}
@@ -39,9 +41,9 @@ echo ${time_start} >> ${log_path}
 
 
 #check input!Need:1.reboot type;2.total time;3.max loop;4.sleep time;
-if [[ $# != 4 && $# != 5 ]];then
-    echo -e "\033[31mInput Error! Usage:$0 reboot_type(reboot/dc) total_time(seconds)  max_loop sleep_time(seconds) upi(optional) \033[0m"
-    echo "Input Error! Usage:$0 reboot_type(reboot/dc) total_time(seconds)  max_loop sleep_time(seconds) upi(optional)" >> $log_path
+if [[ $# != 4 && $# != 5 && $# != 1 ]];then
+    echo -e "\033[31mInput Error! Usage:$0 reboot_type(reboot/dc)/stop total_time(seconds)  max_loop sleep_time(seconds) upi(optional) \033[0m"
+    echo "Input Error! Usage:$0 reboot_type(reboot/dc)/stop total_time(seconds)  max_loop sleep_time(seconds) upi(optional)" >> ${log_path}
     exit 255
 else
   if [ $# == 4 ];then
@@ -50,12 +52,26 @@ else
     max_loop=$3
     sleep_time=$4
 	upi_switch="0"
-  else
+  elif [ $# == 5 ];then
     reboot_type=$1
     total_time=$2
     max_loop=$3
     sleep_time=$4
 	upi_switch=$5
+  elif [ $# == 1 ];then
+    stop_ornot=$1
+	if [ ${stop_ornot} == "stop" ];then
+	  echo -e "\033[32mStop reboot test!Will reboot for another one time!\033[0m"
+	  echo "Stop reboot test!Will reboot for another one time!" >> ${log_path}
+      rm -rf /etc/rc.d/rc.local
+	  rm -rf /home/log_path_dir.txt /home/reboot.sh
+	  killall -9 sh
+	  killall -9 sleep
+	  exit 0
+	else
+	  echo -e "\033[31mInput Error! Usage:$0 reboot_type(reboot/dc)/stop total_time(seconds)  max_loop sleep_time(seconds) upi(optional) \033[0m"
+      exit 255
+	fi
   fi
 fi
 
@@ -73,6 +89,8 @@ echo ${log_path_dir} > /home/log_path_dir.txt
 echo ${log_file_name} > ${log_path_dir}/log_name.txt
 #write log file name to a config file
 echo ${error_file_name} > ${log_path_dir}/error_log_name.txt
+#write dmesg log path
+echo ${dmesg_log_path} > ${log_path_dir}/dmesg-log-path.txt
 
 # check upi input
 if [[ ${upi_switch} == "0" ]];then
@@ -193,10 +211,10 @@ for item_disk in ${filter_disk[@]}
 do
 	echo -e "\033[32mBelow is the smartctl info for\033[0m \033[31m${item_disk} \033[0m"
 	echo "Below is the smartctl info for ${item_disk}" >> ${log_path}
-	model=`smartctl -a ${item_disk}|grep "Model"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
-	sn=`smartctl -a ${item_disk}|grep "Serial Number"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
-	firmware=`smartctl -a ${item_disk}|grep "Firmware"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
-	size=`smartctl -a ${item_disk}|grep "Capacity"|awk -F ":" '{print $2}'|sed s/[[:space:]]//g|awk '{match($0,/\[(.*)\]/,a);print a[1]}'`
+	model=`smartctl -a ${item_disk}|grep -i "Device Model:"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
+	sn=`smartctl -a ${item_disk}|grep -i "Serial Number:"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
+	firmware=`smartctl -a ${item_disk}|grep -i "Firmware Version:"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
+	size=`smartctl -a ${item_disk}|grep -i "User Capacity:"|awk -F ":" '{print $2}'|sed s/[[:space:]]//g|awk '{match($0,/\[(.*)\]/,a);print a[1]}'`
 	if [ ${#model} == 0 ];then
 		model_write="None"
 	else
@@ -292,6 +310,7 @@ log_path="${log_path_dir}/${log_path_temp}"
 #error log file
 error_log_path_temp=`cat ${log_path_dir}/error_log_name.txt`
 error_log_path="${log_path_dir}/${error_log_path_temp}"
+dmesg_log_path=`cat ${log_path_dir}/dmesg-log-path.txt`
 #get total time
 total_time=`cat ${log_path_dir}/total_time.txt`
 #max_loop
@@ -312,8 +331,10 @@ if [[ ${total_seconds} -gt ${total_time} || ${current_count} -gt ${max_loop} ]];
 echo "Total time reached!End Test!" >> ${log_path}
 rm -rf /home/log_path_dir.txt
 rm -rf  ${log_path_dir}/base* ${log_path_dir}/reboot_type.txt ${log_path_dir}/log_name.txt ${log_path_dir}/total_time.txt ${log_path_dir}/max_loop.txt ${log_path_dir}/sleep_time.txt ${log_path_dir}/start_seconds.txt /home/reboot.sh ${log_path_dir}/upiswitch.txt
-rm -rf /etc/rc.d/rc.local
+rm -rf /etc/rc.d/rc.local ${log_path_dir}/dmesg-log-path.txt
 rm -rf ${log_path_dir}/error_log_name.txt
+#copy messages file to log dir
+cp /var/log/messages* ${log_path_dir}
 echo "End Test!End Time:${now_date}" >> ${log_path}
 exit 0
 fi
@@ -324,6 +345,8 @@ date >> ${error_log_path}
 
 #log count
 echo "Below is the info for loop ${current_count}" >> ${log_path}
+# dmesg
+dmesg > ${dmesg_log_path}/dmesg-${current_count}.txt
 #log temp info
 #cpu info
 cpu_number=`cat /proc/cpuinfo |grep "physical id"|sort|uniq -c|wc -l`
@@ -393,10 +416,10 @@ fdisk -l|grep '^Disk /dev/'|grep -v loop|grep -v ram|sort >> ${log_path}
 filter_disk=`fdisk -l|grep '^Disk /dev/'|grep -v loop|grep -v ram|sort|awk '{print $2}'|awk -F ":" '{print $1}'|sed s/[[:space:]]//g`
 for item_disk in ${filter_disk[@]}
 do
-  model=`smartctl -a ${item_disk}|grep "Model"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
-  sn=`smartctl -a ${item_disk}|grep "Serial Number"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
-  firmware=`smartctl -a ${item_disk}|grep "Firmware"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
-  size=`smartctl -a ${item_disk}|grep "Capacity"|awk -F ":" '{print $2}'|sed s/[[:space:]]//g|awk '{match($0,/\[(.*)\]/,a);print a[1]}'`
+  model=`smartctl -a ${item_disk}|grep -i "Device Model:"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
+  sn=`smartctl -a ${item_disk}|grep -i "Serial Number:"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
+  firmware=`smartctl -a ${item_disk}|grep -i "Firmware Version:"|awk -F ":" '{print $2}'|sed 's/^\s*//g'`
+  size=`smartctl -a ${item_disk}|grep -i "User Capacity:"|awk -F ":" '{print $2}'|sed s/[[:space:]]//g|awk '{match($0,/\[(.*)\]/,a);print a[1]}'`
   base_model=`cat ${log_path_dir}/base_disk_model.txt|grep ${item_disk}|awk -F ":" '{print $2}'`
   base_sn=`cat ${log_path_dir}/base_disk_sn.txt|grep ${item_disk}|awk -F ":" '{print $2}'`
   base_firmware=`cat ${log_path_dir}/base_disk_firmware.txt|grep ${item_disk}|awk -F ":" '{print $2}'`
@@ -552,89 +575,90 @@ md5_temp_disk_fdisk=`md5sum ${log_path_dir}/temp_disk_fdisk.txt|awk '{print $1}'
 
 #test the difference
 if [ ${md5_base_cpu_number} != ${md5_temp_cpu_number} ];then
-    echo "CPU Number test fail!" >> ${log_path}
-    echo "CPU Number test fail!" >> ${error_log_path}
-    echo "fail" >> ${log_path_dir}/status.txt
-	echo "Need:" >> ${error_log_path}
-	cat ${log_path_dir}/base_cpu_number.txt >> ${error_log_path}
-	echo "But now:" >> ${error_log_path}
-	cat ${log_path_dir}/temp_cpu_number.txt >>${error_log_path}
+  echo "CPU Number test fail for loop ${current_count}!" >> ${log_path}
+  echo "CPU Number test fail for loop ${current_count}!" >> ${error_log_path}
+  echo "fail" >> ${log_path_dir}/status.txt
+  echo "Need:" >> ${error_log_path}
+  cat ${log_path_dir}/base_cpu_number.txt >> ${error_log_path}
+  echo "But now:" >> ${error_log_path}
+  cat ${log_path_dir}/temp_cpu_number.txt >>${error_log_path}
 else
-    echo "CPU Number test pass!" >> ${log_path}
-    echo "pass" >> ${log_path_dir}/status.txt
+  echo "CPU Number test pass for loop ${current_count}!" >> ${log_path}
+  echo "pass" >> ${log_path_dir}/status.txt
 fi
 
 if [ ${md5_base_cpu_model} != ${md5_temp_cpu_model} ];then
-	echo "CPU Model test fail!" >> ${log_path}
-        echo "CPU Model test fail!" >> ${error_log_path}
+	echo "CPU Model test fail for loop ${current_count}!" >> ${log_path}
+    echo "CPU Model test fail for loop ${current_count}!" >> ${error_log_path}
 	echo "fail" >> ${log_path_dir}/status.txt
 	echo "Need:" >> ${error_log_path}
 	cat ${log_path_dir}/base_cpu_model.txt >> ${error_log_path}
 	echo "But now:" >> ${error_log_path}
 	cat ${log_path_dir}/temp_cpu_model.txt >>${error_log_path}
 else
-	echo "CPU Model test pass!" >> ${log_path}
+	echo "CPU Model test pass for loop ${current_count}!" >> ${log_path}
 	echo "pass" >> ${log_path_dir}/status.txt
 fi
+
 if [ ${md5_base_cpu_cores} != ${md5_temp_cpu_cores} ];then
-	echo "CPU cores test fail!" >> ${log_path}
-        echo "CPU cores test fail!" >> ${error_log_path}
+	echo "CPU cores test fail for loop ${current_count}!" >> ${log_path}
+    echo "CPU cores test fail for loop ${current_count}!" >> ${error_log_path}
 	echo "fail" >> ${log_path_dir}/status.txt
 	echo "Need:" >> ${error_log_path}
 	cat ${log_path_dir}/base_cpu_cores.txt >> ${error_log_path}
 	echo "But now:" >> ${error_log_path}
 	cat ${log_path_dir}/temp_cpu_cores.txt >>${error_log_path}
 else
-	echo "CPU cores test pass!" >> ${log_path}
+	echo "CPU cores test pass for loop ${current_count}!" >> ${log_path}
 	echo "pass" >> ${log_path_dir}/status.txt
 fi
 if [ ${md5_base_cpu_threads} != ${md5_temp_cpu_threads} ];then
-	echo "CPU Threads test fail!" >> ${log_path}
-        echo "CPU Threads test fail!" >> ${error_log_path}
+	echo "CPU Threads test fail for loop ${current_count}!" >> ${log_path}
+    echo "CPU Threads test fail for loop ${current_count}!" >> ${error_log_path}
 	echo "fail" >> ${log_path_dir}/status.txt
 	echo "Need:" >> ${error_log_path}
 	cat ${log_path_dir}/base_cpu_threads.txt >> ${error_log_path}
 	echo "But now:" >> ${error_log_path}
 	cat ${log_path_dir}/temp_cpu_threads.txt >>${error_log_path}
 else
-	echo "CPU Threads test pass!" >> ${log_path}
+	echo "CPU Threads test pass for loop ${current_count}!" >> ${log_path}
 	echo "pass" >> ${log_path_dir}/status.txt
 fi
 if [ ${md5_base_mem_size} != ${md5_temp_mem_size} ];then
-	echo "Mem Size test fail!" >> ${log_path}
-        echo "Mem Size test fail!" >> ${error_log_path}
+	echo "Mem Size test fail for loop ${current_count}!" >> ${log_path}
+    echo "Mem Size test fail for loop ${current_count}!" >> ${error_log_path}
 	echo "fail" >> ${log_path_dir}/status.txt
 	echo "Need:" >> ${error_log_path}
 	cat ${log_path_dir}/base_mem_size.txt >> ${error_log_path}
 	echo "But now:" >> ${error_log_path}
 	cat ${log_path_dir}/temp_mem_size.txt >>${error_log_path}
 else
-	echo "Mem Size test pass!" >> ${log_path}
+	echo "Mem Size test pass for loop ${current_count}!" >> ${log_path}
 	echo "pass" >> ${log_path_dir}/status.txt
 fi
 
 if [ ${md5_base_lsscsi} != ${md5_temp_lsscsi} ];then
-	echo "Lsscsi test fail!" >> ${log_path}
-        echo "Lsscsi test fail!" >> ${error_log_path}
+	echo "Lsscsi test fail for loop ${current_count}!" >> ${log_path}
+    echo "Lsscsi test fail for loop ${current_count}!" >> ${error_log_path}
 	echo "fail" >> ${log_path_dir}/status.txt
 	echo "Need:" >> ${error_log_path}
 	cat ${log_path_dir}/base_lsscsi.txt >> ${error_log_path}
 	echo "But now:" >> ${error_log_path}
 	cat ${log_path_dir}/temp_lsscsi.txt >>${error_log_path}
 else
-	echo "Lsscsi test pass!" >> ${log_path}
+	echo "Lsscsi test pass for loop ${current_count}!" >> ${log_path}
 	echo "pass" >> ${log_path_dir}/status.txt
 fi
 if [ ${md5_base_disk_fdisk} != ${md5_temp_disk_fdisk} ];then
-	echo "Disk fdisk info test fail!" >> ${log_path}
-        echo "Disk fdisk info test fail!" >> ${error_log_path}
+	echo "Disk fdisk info test fail for loop ${current_count}!" >> ${log_path}
+    echo "Disk fdisk info test fail for loop ${current_count}!" >> ${error_log_path}
 	echo "fail" >> ${log_path_dir}/status.txt
 	echo "Need:" >> ${error_log_path}
 	cat ${log_path_dir}/base_disk_fdisk.txt >> ${error_log_path}
 	echo "But now:" >> ${error_log_path}
 	cat ${log_path_dir}/temp_disk_fdisk.txt >>${error_log_path}
 else
-	echo "Disk fdisk info test pass!" >> ${log_path}
+	echo "Disk fdisk info test pass for loop ${current_count}!" >> ${log_path}
 	echo "pass" >> ${log_path_dir}/status.txt
 fi
 
@@ -642,9 +666,11 @@ fi
 len_lspci_status=`cat ${log_path_dir}/lspcistatus.txt|grep fail|wc -l`
 if [[ ${len_lspci_status} != 0 ]];then
   echo "fail" >> ${log_path_dir}/status.txt
-   echo "Lspci test fail!" >> ${log_path}
+  echo "Lspci test fail for loop ${current_count}!" >> ${log_path}
+  echo "Lspci test fail for loop ${current_count}!" >> ${error_log_path}
+
 else
-  echo "Lspci test pass!" >> ${log_path}
+  echo "Lspci test pass for loop ${current_count}!" >> ${log_path}
   echo "pass" >> ${log_path_dir}/status.txt
 fi
 rm -rf ${log_path_dir}/lspcistatus.txt
@@ -653,9 +679,10 @@ rm -rf ${log_path_dir}/lspcistatus.txt
 len_status=`cat ${log_path_dir}/netstatus.txt|grep fail|wc -l`
 if [[ ${len_status} != 0 ]];then
   echo "fail" >> ${log_path_dir}/status.txt
-   echo "Network name & MAC test fail!" >> ${log_path}
+  echo "Network name & MAC test fail for loop ${current_count}!" >> ${log_path}
+  echo "Network name & MAC test fail for loop ${current_count}!" >> ${error_log_path}
 else
-  echo "Network name & MAC test pass!" >> ${log_path}
+  echo "Network name & MAC test pass for loop ${current_count}!" >> ${log_path}
   echo "pass" >> ${log_path_dir}/status.txt
 fi
 rm -rf ${log_path_dir}/netstatus.txt
@@ -667,9 +694,10 @@ len_firmware_status=`cat ${log_path_dir}/firmwarestatus.txt|grep fail|wc -l`
 len_size_status=`cat ${log_path_dir}/sizestatus.txt|grep fail|wc -l`
 if [[ ${len_model_status} != 0 || ${len_sn_status} != 0 || ${len_firmware_status} != 0 || ${len_size_status} != 0 ]];then
   echo "fail" >> ${log_path_dir}/status.txt
-  echo "Disk info(Model/SN/Firmware/Size) test fail!" >> ${log_path}
+  echo "Disk info(Model/SN/Firmware/Size) test fail for loop ${current_count}!" >> ${log_path}
+  echo "Disk info(Model/SN/Firmware/Size) test fail for loop ${current_count}!" >> ${error_log_path}
 else
-  echo "Disk info(Model/SN/Firmware/Size) test pass!" >> ${log_path}
+  echo "Disk info(Model/SN/Firmware/Size) test pass for loop ${current_count}!" >> ${log_path}
   echo "pass" >> ${log_path_dir}/status.txt
 fi
 rm -rf ${log_path_dir}/modelstatus.txt
@@ -681,10 +709,11 @@ rm -rf ${log_path_dir}/sizestatus.txt
 pciespeed_status=`cat ${log_path_dir}/pciespeedstatus.txt|grep fail|wc -l`
 if [[ ${pciespeed_status} != 0 ]];then
   echo "fail" >> ${log_path_dir}/status.txt
-  echo "PCIe Speed test fail" >> ${log_path}
+  echo "PCIe Speed test fail for loop ${current_count}!" >> ${log_path}
+  echo "PCIe Speed test fail for loop ${current_count}!" >> ${error_log_path}
 else
   echo "pass" >> ${log_path_dir}/status.txt
-  echo "PCIe Speed test pass" >> ${log_path}
+  echo "PCIe Speed test pass for loop ${current_count}!" >> ${log_path}
 fi
 rm -rf ${log_path_dir}/pciespeedstatus.txt
 
@@ -694,10 +723,11 @@ if [[ ${upi_switch} == "1" ]];then
   upispeed_status=`cat ${log_path_dir}/upispeedstatus.txt|grep fail|wc -l`
   if [[ ${upispeed_status} != 0 ]];then
     echo "fail" >> ${log_path_dir}/status.txt
-    echo "UPI Speed test fail" >> ${log_path}
+    echo "UPI Speed test fail for loop ${current_count}!" >> ${log_path}
+	echo "UPI Speed test fail for loop ${current_count}!" >> ${error_log_path}
   else
     echo "pass" >> ${log_path_dir}/status.txt
-    echo "UPI Speed test pass" >> ${log_path}
+    echo "UPI Speed test pass for loop ${current_count}!" >> ${log_path}
   fi
 fi
 rm -rf ${log_path_dir}/upispeedstatus.txt
@@ -705,9 +735,9 @@ rm -rf ${log_path_dir}/upispeedstatus.txt
 
 cat ${log_path_dir}/status.txt|grep fail > /dev/null 2>&1
 if [ $? == 0 ];then
-  echo "FAIL!" >> ${log_path}
+  echo "Total FAIL for loop ${current_count}!" >> ${log_path}
 else
-  echo "PASS!" >> ${log_path}
+  echo "Total PASS for loop ${current_count}!" >> ${log_path}
 fi
 count_next=$[ current_count + 1 ] 
 echo $count_next > ${log_path_dir}/count.txt
