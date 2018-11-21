@@ -38,12 +38,14 @@ def gen_conf(diskname, policy, block, time_per_block, iodepth_per_block, numjobs
     conf_detail_list.append("rw={0}".format(policy) + os.linesep)
     conf_detail_list.append("time_based" + os.linesep)
     conf_detail_list.append("direct=1" + os.linesep)
+    conf_detail_list.append("ramp_time=60" + os.linesep)
     conf_detail_list.append("group_reporting" + os.linesep)
     conf_detail_list.append("randrepeat=0" + os.linesep)
     conf_detail_list.append("norandommap" + os.linesep)
     conf_detail_list.append("iodepth={0}".format(iodepth_per_block) + os.linesep)
     if log_flag == "1":
-        conf_detail_list.append("log_avg_msec=10000" + os.linesep)
+        conf_detail_list.append("log_avg_msec=1000" + os.linesep)
+        conf_detail_list.append("log_max_value=1" + os.linesep)
         conf_detail_list.append("write_bw_log={0}-{1}-{2}".format(policy, block, diskname) + os.linesep)
         conf_detail_list.append("write_iops_log={0}-{1}-{2}".format(policy, block, diskname) + os.linesep)
         conf_detail_list.append("write_lat_log={0}-{1}-{2}".format(policy, block, diskname) + os.linesep)
@@ -55,7 +57,7 @@ def gen_conf(diskname, policy, block, time_per_block, iodepth_per_block, numjobs
     return  conf_detail_list
 
 
-def plot_image(figure_name, raw_data_filename_iops, raw_data_filename_bw, raw_data_filename_lat, image_dir_sub):
+def plot_image_1job(figure_name, raw_data_filename_iops, raw_data_filename_bw, raw_data_filename_lat, image_dir_sub):
     # get data for iops
     with open(raw_data_filename_iops, mode='rb') as rawdata_file_iops:
         content_iops = rawdata_file_iops.readlines()
@@ -71,7 +73,7 @@ def plot_image(figure_name, raw_data_filename_iops, raw_data_filename_bw, raw_da
     x_data = 0
     for y_data in range(0, len(data_1_list_iops)):
         data_2_list_iops.append(x_data)
-        x_data += 10
+        x_data += 1
     max_y_iops = max(data_1_list_iops) * 1.1
     min_y_iops = min(data_1_list_iops) * 0.9
     jiange_iops = (max_y_iops - min_y_iops) / 10
@@ -149,11 +151,130 @@ def plot_image(figure_name, raw_data_filename_iops, raw_data_filename_bw, raw_da
     plyt.close()
 
 
+def plot_image_4job(figure_name, raw_data_filename_iops_list, raw_data_filename_bw_list, raw_data_filename_lat_list, image_dir_sub):
+    data_iops = {}
+    data_bw = {}
+    data_lat = {}
+    # get data for iops from result file
+    for index_iops, item_iops in enumerate(raw_data_filename_iops_list):
+        data_iops["{}".format(index_iops)] = []
+        with open(item_iops, mode='rb') as rawdata_file_iops:
+            data_iops["{}".format(index_iops)].extend([float(item.split(",")[1].strip()) for item in rawdata_file_iops.readlines()])
+    # get data for bw from result file
+    for index_bw, item_bw in enumerate(raw_data_filename_bw_list):
+        data_bw["{}".format(index_bw)] = []
+        with open(item_bw, mode='rb') as rawdata_file_bw:
+            data_bw["{}".format(index_bw)].extend([float(item.split(",")[1].strip()) for item in rawdata_file_bw.readlines()])
+    # get data for lat from result file
+    for index_lat, item_lat in enumerate(raw_data_filename_lat_list):
+        data_lat["{}".format(index_lat)] = []
+        with open(item_lat, mode='rb') as rawdata_file_lat:
+            data_lat["{}".format(index_lat)].extend([float(item.split(",")[1].strip()) for item in rawdata_file_lat.readlines()])
+
+    # filter data for iops
+    data_1_list_iops = []
+    data_2_list_iops = []
+    try:
+        for index_iops_sub, item_iops_sub in enumerate(data_iops['0']):
+            data_1_list_iops.append(item_iops_sub + data_iops['1'][index_iops_sub] + data_iops['2'][index_iops_sub] + data_iops['3'][index_iops_sub])
+    except IndexError:
+        pass
+    x_data = 0
+    for y_data in range(0, len(data_1_list_iops)):
+        data_2_list_iops.append(x_data)
+        x_data += 1
+    max_y_iops = max(data_1_list_iops) * 1.1
+    min_y_iops = min(data_1_list_iops) * 0.9
+    jiange_iops = (max_y_iops - min_y_iops) / 10
+    y_ticks_iops = numpy.arange(min_y_iops, max_y_iops, step=jiange_iops)
+    data_second_iops = numpy.array(data_2_list_iops)
+    data_data_iops = numpy.array(data_1_list_iops)
+
+    # filter data for bw
+    data_1_list_bw = []
+    data_2_list_bw = []
+    try:
+        for index_bw_sub, item_bw_sub in enumerate(data_bw['0']):
+            data_1_list_bw.append(item_bw_sub + data_bw['1'][index_bw_sub] + data_bw['2'][index_bw_sub] + data_bw['3'][index_bw_sub])
+    except IndexError:
+        pass
+    x_data = 0
+    for y_data in range(0, len(data_1_list_bw)):
+        data_2_list_bw.append(x_data)
+        x_data += 10
+    max_y_bw = max(data_1_list_bw) * 1.1
+    min_y_bw = min(data_1_list_bw) * 0.9
+    jiange_bw = (max_y_bw - min_y_bw) / 10
+    y_ticks_bw = numpy.arange(min_y_bw, max_y_bw, step=jiange_bw)
+    data_second_bw = numpy.array(data_2_list_bw)
+    data_data_bw = numpy.array(data_1_list_bw)
+
+    # filter data for lat
+    data_1_list_lat = []
+    data_2_list_lat = []
+    try:
+        for index_lat_sub, item_lat_sub in enumerate(data_lat['0']):
+            data_1_list_lat.append(item_lat_sub + data_lat['1'][index_lat_sub] + data_lat['2'][index_lat_sub] + data_lat['3'][index_lat_sub])
+    except IndexError:
+        pass
+    x_data = 0
+    for y_data in range(0, len(data_1_list_lat)):
+        data_2_list_lat.append(x_data)
+        x_data += 10
+    max_y_lat = max(data_1_list_lat) * 1.1
+    min_y_lat = min(data_1_list_lat) * 0.9
+    jiange_lat = (max_y_lat - min_y_lat) / 10
+    y_ticks_lat = numpy.arange(min_y_lat, max_y_lat, step=jiange_lat)
+    data_second_lat = numpy.array(data_2_list_lat)
+    data_data_lat = numpy.array(data_1_list_lat)
+
+    # plot
+    figure_1 = plyt.figure(figure_name, figsize=(20, 10))
+    plyt.suptitle(figure_name)
+    # set height space between two lines
+    plyt.subplots_adjust(hspace=1)
+    # plot iops
+    fig_iops = plyt.subplot(311)
+    fig_iops.grid(True)
+    plyt.ylim((min_y_iops, max_y_iops))
+    plyt.yticks(y_ticks_iops)
+    plyt.xlabel("time(secs)")
+    plyt.ylabel("IOPS")
+    fig_iops.set_title("IOPS")
+    fig_iops.plot(data_second_iops, data_data_iops)
+    time.sleep(1)
+
+    # plot bw
+    fig_bw = plyt.subplot(312)
+    fig_bw.grid(True)
+    plyt.ylim((min_y_bw, max_y_bw))
+    plyt.yticks(y_ticks_bw)
+    plyt.xlabel("time(secs)")
+    plyt.ylabel("BW(KB/s)")
+    fig_bw.set_title("BandWidth")
+    fig_bw.plot(data_second_bw, data_data_bw)
+    time.sleep(1)
+
+    # plot lat
+    fig_lat = plyt.subplot(313)
+    fig_lat.grid(True)
+    plyt.ylim((min_y_lat, max_y_lat))
+    plyt.yticks(y_ticks_lat)
+    plyt.xlabel("time(secs)")
+    plyt.ylabel("Lat(usecs)")
+    fig_lat.set_title("Latency")
+    fig_lat.plot(data_second_lat, data_data_lat)
+    time.sleep(1)
+    figure_name_temp = figure_name + '.jpg'
+    figure_1.savefig(os.path.join(image_dir_sub, figure_name_temp))
+    plyt.close()
+
+
 def run_fio(policy, block, diskname_list_sub, runtime, image_flag):
-    for item in diskname_list_sub:
-        subprocess.Popen("fio {confdir}/{policy}/{time}-{policy}-{block}-{diskname} > {resultdir}/{policy}/{policy}-{block}-{diskname} 2>&1 &".format(confdir=conf_dir, policy=policy, time=runtime, block=block, diskname=item, resultdir=result_dir), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    for item_sub in diskname_list_sub:
+        subprocess.Popen("fio {confdir}/{policy}/{time}-{policy}-{block}-{diskname} > {resultdir}/{policy}/{policy}-{block}-{diskname} 2>&1 &".format(confdir=conf_dir, policy=policy, time=runtime, block=block, diskname=item_sub, resultdir=result_dir), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while 1 > 0:
-        fio_run_status = subprocess.Popen("ps -aux|grep fio|grep -v grep", shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        fio_run_status = subprocess.Popen("ps -aux|grep fio|grep -v grep|grep -v man", shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         fio_run_status.wait()
         if fio_run_status.returncode == 0:
             time.sleep(10)
@@ -162,19 +283,30 @@ def run_fio(policy, block, diskname_list_sub, runtime, image_flag):
 
     if image_flag == "1":
         raw_data_all_filename_temp = os.listdir(rawdata_dir)
-        for item in diskname_list_sub:
-            filter_pattern = "{policy}-{block}-{diskname}".format(policy=policy, block=block, diskname=item)
+        for item_job1 in diskname_list_sub:
+            filter_pattern = "{policy}-{block}-{diskname}".format(policy=policy, block=block, diskname=item_job1)
             raw_data_filename_now = [item for item in raw_data_all_filename_temp if re.search(r'%s' % filter_pattern, item) is not None]
             raw_data_filename_now_iops = [item for item in raw_data_filename_now if re.search(r'_iops', item) is not None][0]
             raw_data_filename_now_bw = [item for item in raw_data_filename_now if re.search(r'_bw', item) is not None][0]
             raw_data_filename_now_lat = [item for item in raw_data_filename_now if re.search(r'_lat', item) is not None][0]
-            plot_image(filter_pattern, raw_data_filename_now_iops, raw_data_filename_now_bw, raw_data_filename_now_lat, image_dir)
+            plot_image_1job(filter_pattern, raw_data_filename_now_iops, raw_data_filename_now_bw, raw_data_filename_now_lat, image_dir)
+    elif image_flag == "4":
+        raw_data_all_filename_temp = os.listdir(rawdata_dir)
+        for item_job4 in diskname_list_sub:
+            filter_pattern = "{policy}-{block}-{diskname}".format(policy=policy, block=block, diskname=item_job4)
+            raw_data_filename_now = [item for item in raw_data_all_filename_temp if re.search(r'%s' % filter_pattern, item) is not None]
+            raw_data_filename_now_iops = [item for item in raw_data_filename_now if re.search(r'_iops', item) is not None]
+            raw_data_filename_now_bw = [item for item in raw_data_filename_now if re.search(r'_bw', item) is not None]
+            raw_data_filename_now_lat = [item for item in raw_data_filename_now if re.search(r'_lat', item) is not None]
+            plot_image_4job(filter_pattern, raw_data_filename_now_iops, raw_data_filename_now_bw, raw_data_filename_now_lat, image_dir)
 
 
 current_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(current_path)
 
-time_start = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+time_start_temp = time.localtime(time.time())
+time_start = time.strftime('%Y%m%d%H%M%S', time_start_temp)
+time_start_write = time.strftime('%Y-%m-%d %H:%M:%S', time_start_temp)
 log_dir_name = time_start + "_SIT_FIO_TEST_RHEL"
 log_file_name = time_start + "_SIT_FIO_TEST_RHEL.log"
 log_path_temp = current_path + "/log"
@@ -397,7 +529,7 @@ if re.search(r'[Nn][Oo][Nn][Ee]', read_policy_list[0]) is None:
 if re.search(r'[Nn][Oo][Nn][Ee]', randwrite_policy_list[0]) is None:
     for item_diskname_randwrite in diskname_list:
         for item_block_randwrite in randwrite_policy_list:
-            conf_for_item_randwrite = gen_conf(item_diskname_randwrite, "randwrite", item_block_randwrite, "600", "128", "1", "1")
+            conf_for_item_randwrite = gen_conf(item_diskname_randwrite, "randwrite", item_block_randwrite, "600", "128", "4", "1")
             with open(randwriteconf_dir + "/raw-randwrite-{}-{}".format(item_block_randwrite, item_diskname_randwrite), mode="wb") as file_handle_randwrite:  # like: write-4k-nvme1n1
                 for item_conf_detail_randwrite in conf_for_item_randwrite:
                     file_handle_randwrite.write(item_conf_detail_randwrite)
@@ -405,7 +537,7 @@ if re.search(r'[Nn][Oo][Nn][Ee]', randwrite_policy_list[0]) is None:
 if re.search(r'[Nn][Oo][Nn][Ee]', randread_policy_list[0]) is None:
     for item_diskname_randread in diskname_list:
         for item_block_randread in randread_policy_list:
-            conf_for_item_randread = gen_conf(item_diskname_randread, "randread", item_block_randread, "600", "128", "1", "1")
+            conf_for_item_randread = gen_conf(item_diskname_randread, "randread", item_block_randread, "600", "128", "4", "1")
             with open(randreadconf_dir + "/raw-randread-{}-{}".format(item_block_randread, item_diskname_randread), mode="wb") as file_handle_randread:  # like: write-4k-nvme1n1
                 for item_conf_detail_randread in conf_for_item_randread:
                     file_handle_randread.write(item_conf_detail_randread)
@@ -418,7 +550,7 @@ for item_diskname_write128k2h in diskname_list:
 # gen conf for randwrite_4k_6h
 for item_diskname_randwrite4k6h in diskname_list:
     conf_for_item_randwrite4k6h = gen_conf(item_diskname_randwrite4k6h, "randwrite", "4k", "21600", "128", "4", "0")
-    with open(randwrite4k6hconf_dir + "/6h-randwrite-4k-{}".format(item_diskname_randwrite4k6h), mode="wb") as file_handle_randwrite4k6h:  # like: write-4k-nvme1n1
+    with open(randwrite4k6hconf_dir + "/6h-randwrite4k6h-4k-{}".format(item_diskname_randwrite4k6h), mode="wb") as file_handle_randwrite4k6h:  # like: write-4k-nvme1n1
         for item_conf_detail_randwrite4k6h in conf_for_item_randwrite4k6h:
             file_handle_randwrite4k6h.write(item_conf_detail_randwrite4k6h)
 
@@ -433,33 +565,46 @@ if not os.path.isdir(image_dir):
 # run_item_list = os.listdir(run_dir)
 os.chdir(rawdata_dir)
 # run fio and plot
-resultlog.write("Begin FIO stress test!Start time %s" % time_start + os.linesep)
-print("Begin FIO stress test!Start time %s" % time_start)
+resultlog.write("Begin FIO stress test!Start time {}".format(time_start_write) + os.linesep)
+print("Begin FIO stress test!Start time {}".format(time_start_write))
 
 # run write
 if re.search(r'[Nn][Oo][Nn][Ee]', write_policy_list[0]) is None:
-    print("Begin to start run write!")
-    resultlog.write("Begin to start run write!" + os.linesep)
+
+    time_temp = time.localtime(time.time())
+    print("Start run write at:{}!".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+    resultlog.write("Start run write at:".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
+
     for block_write in write_policy_list:
-        print("Begin to start run write-{}!".format(block_write))
-        resultlog.write("Begin to start run write-{}!".format(block_write) + os.linesep)
+        time_temp = time.localtime(time.time())
+        print("Start run write-{} at: {}".format(block_write, time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+        resultlog.write("Start run write-{} at: {}".format(block_write, time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
         run_fio("write", block_write, diskname_list, "raw", "1")
-    print("End write!")
-    resultlog.write("End write!" + os.linesep)
+
+    time_temp = time.localtime(time.time())
+    print("End write at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+    resultlog.write("End write at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
+
 else:
     print("No write! Skip!")
     resultlog.write("No write! Skip!" + os.linesep)
 
 # run read
 if re.search(r'[Nn][Oo][Nn][Ee]', read_policy_list[0]) is None:
-    print("Begin to start run read!")
-    resultlog.write("Begin to start run read!" + os.linesep)
+    time_temp = time.localtime(time.time())
+    print("Start run read at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+    resultlog.write("Start run read at:{}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
+
     for block_read in read_policy_list:
-        print("Begin to start run read-{}!".format(block_read))
-        resultlog.write("Begin to start run read-{}!".format(block_read) + os.linesep)
+        time_temp = time.localtime(time.time())
+        print("Start run read-{} at: {}".format(block_read, time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+        resultlog.write("Start run read-{} at: {}".format(block_read, time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
         run_fio("read", block_read, diskname_list, "raw", "1")
-    print("End read!")
-    resultlog.write("End read" + os.linesep)
+
+    time_temp = time.localtime(time.time())
+    print("End read at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+    resultlog.write("End read at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
+
 else:
     print("No read! Skip!")
     resultlog.write("No read! Skip!" + os.linesep)
@@ -467,43 +612,62 @@ else:
 # run randread
 if re.search(r'[Nn][Oo][Nn][Ee]', randread_policy_list[0]) is None:
     # run write 128k 2h
-    print("Begin to start run write128k2h!")
-    resultlog.write("Begin to start run write128k2h!" + os.linesep)
+    time_temp = time.localtime(time.time())
+    print("Start run write128k2h at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+    resultlog.write("Start run write128k2h at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
     run_fio("write128k2h", "128k", diskname_list, "2h", "0")
-    print("End write128k2h!")
-    resultlog.write("End write128k2h!" + os.linesep)
+
+    time_temp = time.localtime(time.time())
+    print("End write128k2h at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+    resultlog.write("End write128k2h at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
+
     # run randread
-    print("Begin to start run randread!")
-    resultlog.write("Begin to start run randread!" + os.linesep)
+    time_temp = time.localtime(time.time())
+    print("Start run randread at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+    resultlog.write("Start run randread at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
+
     for block_randread in randread_policy_list:
-        print("Begin to start run randread-{}!".format(block_randread))
-        resultlog.write("Begin to start run randread-{}!".format(block_randread) + os.linesep)
-        run_fio("randread", block_randread, diskname_list, "raw", "1")
-    print("End randread!")
-    resultlog.write("End randread!" + os.linesep)
+        time_temp = time.localtime(time.time())
+        print("Start run randread-{} at: {}".format(block_randread, time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+        resultlog.write("Start run randread-{} at: {}".format(block_randread, time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
+        run_fio("randread", block_randread, diskname_list, "raw", "4")
+
+    time_temp = time.localtime(time.time())
+    print("End randread at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+    resultlog.write("End randread at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
 else:
     print("No randread! Skip!")
     resultlog.write("No randread! Skip!" + os.linesep)
 
 # run randwrite
 if re.search(r'[Nn][Oo][Nn][Ee]', randwrite_policy_list[0]) is None:
-    print("Begin to start run randwrite4k6h!")
-    resultlog.write("Begin to start run randwrite4k6h!" + os.linesep)
+
+    time_temp = time.localtime(time.time())
+    print("Start run randwrite4k6h at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+    resultlog.write("Start run randwrite4k6h at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
     run_fio("randwrite4k6h", "4k", diskname_list, "6h", "0")
-    print("End randwrite4k6h!")
-    resultlog.write("End randwrite4k6h!" + os.linesep)
+
+    time_temp = time.localtime(time.time())
+    print("End randwrite4k6h at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+    resultlog.write("End randwrite4k6h at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
+
     for block_randwrite in randwrite_policy_list:
-        print("Begin to start run randwrite-{}!".format(block_randwrite))
-        resultlog.write("Begin to start run randwrite-{}!".format(block_randwrite) + os.linesep)
-        run_fio("randwrite", block_randwrite, diskname_list, "raw", "1")
-    print("End randwrite!")
-    resultlog.write("End randwrite!" + os.linesep)
+        time_temp = time.localtime(time.time())
+        print("Start run randwrite-{} at: {}".format(block_randwrite, time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+        resultlog.write("Start run randwrite-{} at: {}".format(block_randwrite, time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
+        run_fio("randwrite", block_randwrite, diskname_list, "raw", "4")
+
+    time_temp = time.localtime(time.time())
+    print("End randwrite at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)))
+    resultlog.write("End randwrite at: {}".format(time.strftime('%Y-%m-%-d %H:%M:%S', time_temp)) + os.linesep)
 else:
     print("No randwrite! Skip!")
     resultlog.write("No randwrite! Skip!" + os.linesep)
 
-end_time = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
-resultlog.write("End FIO stress test!End time {0}".format(end_time) + os.linesep)
-print("End FIO stress test!End time {0}".format(end_time))
+time_end_temp = time.localtime(time.time())
+time_end_write = time.strftime('%Y-%m-%d %H:%M:%S', time_end_temp)
+
+resultlog.write("End FIO stress test!End time: {0}".format(time_end_write) + os.linesep)
+print("End FIO stress test!End time {0}".format(time_end_write))
 resultlog.close()
 sys.exit(0)
