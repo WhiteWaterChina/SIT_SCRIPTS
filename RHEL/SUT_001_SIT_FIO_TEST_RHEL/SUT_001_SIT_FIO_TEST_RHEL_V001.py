@@ -87,7 +87,7 @@ def plot_image_1job(figure_name, raw_data_filename_iops, raw_data_filename_bw, r
     x_data = 0
     for y_data in range(0, len(data_1_list_bw)):
         data_2_list_bw.append(x_data)
-        x_data += 10
+        x_data += 1
     max_y_bw = max(data_1_list_bw) * 1.1
     min_y_bw = min(data_1_list_bw) * 0.9
     jiange_bw = (max_y_bw - min_y_bw) / 10
@@ -101,7 +101,7 @@ def plot_image_1job(figure_name, raw_data_filename_iops, raw_data_filename_bw, r
     x_data = 0
     for y_data in range(0, len(data_1_list_lat)):
         data_2_list_lat.append(x_data)
-        x_data += 10
+        x_data += 1
     max_y_lat = max(data_1_list_lat) * 1.1
     min_y_lat = min(data_1_list_lat) * 0.9
     jiange_lat = (max_y_lat - min_y_lat) / 10
@@ -201,7 +201,7 @@ def plot_image_4job(figure_name, raw_data_filename_iops_list, raw_data_filename_
     x_data = 0
     for y_data in range(0, len(data_1_list_bw)):
         data_2_list_bw.append(x_data)
-        x_data += 10
+        x_data += 1
     max_y_bw = max(data_1_list_bw) * 1.1
     min_y_bw = min(data_1_list_bw) * 0.9
     jiange_bw = (max_y_bw - min_y_bw) / 10
@@ -220,7 +220,7 @@ def plot_image_4job(figure_name, raw_data_filename_iops_list, raw_data_filename_
     x_data = 0
     for y_data in range(0, len(data_1_list_lat)):
         data_2_list_lat.append(x_data)
-        x_data += 10
+        x_data += 1
     max_y_lat = max(data_1_list_lat) * 1.1
     min_y_lat = min(data_1_list_lat) * 0.9
     jiange_lat = (max_y_lat - min_y_lat) / 10
@@ -460,61 +460,31 @@ else:
 conf_dir = log_path_dir + "/fio_conf"
 if not os.path.isdir(conf_dir):
     os.mkdir(conf_dir)
-writeconf_dir = conf_dir + "/write"
-if not os.path.isdir(writeconf_dir):
-    os.mkdir(writeconf_dir)
-readconf_dir = conf_dir + "/read"
-if not os.path.isdir(readconf_dir):
-    os.mkdir(readconf_dir)
-randwriteconf_dir = conf_dir + "/randwrite"
-if not os.path.isdir(randwriteconf_dir):
-    os.mkdir(randwriteconf_dir)
-randreadconf_dir = conf_dir + "/randread"
-if not os.path.isdir(randreadconf_dir):
-    os.mkdir(randreadconf_dir)
-randreadconf_dir = conf_dir + "/randread"
-if not os.path.isdir(randreadconf_dir):
-    os.mkdir(randreadconf_dir)
-write128k2hconf_dir = conf_dir + "/write128k2h"
-if not os.path.isdir(write128k2hconf_dir):
-    os.mkdir(write128k2hconf_dir)
-randwrite4k6hconf_dir = conf_dir + "/randwrite4k6h"
-if not os.path.isdir(randwrite4k6hconf_dir):
-    os.mkdir(randwrite4k6hconf_dir)
+
+policy_list = ["write", "read", "randwrite", "randread", "write128k2h", "randwrite4k6h"]
+for item_policy in policy_list:
+    dir_conf_temp = conf_dir + "/{}".format(item_policy)
+    if not os.path.isdir(dir_conf_temp):
+        os.mkdir(dir_conf_temp)
 
 # create result dir
 result_dir = log_path_dir + "/result"
 if not os.path.isdir(result_dir):
     os.mkdir(result_dir)
-writeresult_dir = result_dir + "/write"
-if not os.path.isdir(writeresult_dir):
-    os.mkdir(writeresult_dir)
-readresult_dir = result_dir + "/read"
-if not os.path.isdir(readresult_dir):
-    os.mkdir(readresult_dir)
-randwriteresult_dir = result_dir + "/randwrite"
-if not os.path.isdir(randwriteresult_dir):
-    os.mkdir(randwriteresult_dir)
-randreadresult_dir = result_dir + "/randread"
-if not os.path.isdir(randreadresult_dir):
-    os.mkdir(randreadresult_dir)
-randreadresult_dir = result_dir + "/randread"
-if not os.path.isdir(randreadresult_dir):
-    os.mkdir(randreadresult_dir)
-write128k2hresult_dir = result_dir + "/write128k2h"
-if not os.path.isdir(write128k2hresult_dir):
-    os.mkdir(write128k2hresult_dir)
-randwrite4k6hresult_dir = result_dir + "/randwrite4k6h"
-if not os.path.isdir(randwrite4k6hresult_dir):
-    os.mkdir(randwrite4k6hresult_dir)
+for item_policy in policy_list:
+    dir_result_temp = result_dir + "/{}".format(item_policy)
+    if not os.path.isdir(dir_result_temp):
+        os.mkdir(dir_result_temp)
+
 
 # create conf file
 # gen conf for write
+
 if re.search(r'[Nn][Oo][Nn][Ee]', write_policy_list[0]) is None:
     for item_diskname_write in diskname_list:
         for item_block_write in write_policy_list:
             conf_for_item_write = gen_conf(item_diskname_write, "write", item_block_write, "600", "128", "1", "1")
-            with open(writeconf_dir + "/raw-write-{}-{}".format(item_block_write, item_diskname_write), mode="wb") as file_handle_write:  # like: write-4k-nvme1n1
+            with open(conf_dir + "/write" + "/raw-write-{}-{}".format(item_block_write, item_diskname_write), mode="wb") as file_handle_write:  # like: write-4k-nvme1n1
                 for item_conf_detail_write in conf_for_item_write:
                     file_handle_write.write(item_conf_detail_write)
 # gen conf for read
@@ -522,7 +492,7 @@ if re.search(r'[Nn][Oo][Nn][Ee]', read_policy_list[0]) is None:
     for item_diskname_read in diskname_list:
         for item_block_read in read_policy_list:
             conf_for_item_read = gen_conf(item_diskname_read, "read", item_block_read, "600", "128", "1", "1")
-            with open(readconf_dir + "/raw-read-{}-{}".format(item_block_read, item_diskname_read), mode="wb") as file_handle_read:  # like: write-4k-nvme1n1
+            with open(conf_dir + "/read" + "/raw-read-{}-{}".format(item_block_read, item_diskname_read), mode="wb") as file_handle_read:  # like: write-4k-nvme1n1
                 for item_conf_detail_read in conf_for_item_read:
                     file_handle_read.write(item_conf_detail_read)
 # gen conf for randwrite
@@ -530,7 +500,7 @@ if re.search(r'[Nn][Oo][Nn][Ee]', randwrite_policy_list[0]) is None:
     for item_diskname_randwrite in diskname_list:
         for item_block_randwrite in randwrite_policy_list:
             conf_for_item_randwrite = gen_conf(item_diskname_randwrite, "randwrite", item_block_randwrite, "600", "128", "4", "1")
-            with open(randwriteconf_dir + "/raw-randwrite-{}-{}".format(item_block_randwrite, item_diskname_randwrite), mode="wb") as file_handle_randwrite:  # like: write-4k-nvme1n1
+            with open(conf_dir + "/randwrite" + "/raw-randwrite-{}-{}".format(item_block_randwrite, item_diskname_randwrite), mode="wb") as file_handle_randwrite:  # like: write-4k-nvme1n1
                 for item_conf_detail_randwrite in conf_for_item_randwrite:
                     file_handle_randwrite.write(item_conf_detail_randwrite)
 # gen conf for randread
@@ -538,19 +508,19 @@ if re.search(r'[Nn][Oo][Nn][Ee]', randread_policy_list[0]) is None:
     for item_diskname_randread in diskname_list:
         for item_block_randread in randread_policy_list:
             conf_for_item_randread = gen_conf(item_diskname_randread, "randread", item_block_randread, "600", "128", "4", "1")
-            with open(randreadconf_dir + "/raw-randread-{}-{}".format(item_block_randread, item_diskname_randread), mode="wb") as file_handle_randread:  # like: write-4k-nvme1n1
+            with open(conf_dir + "/randread" + "/raw-randread-{}-{}".format(item_block_randread, item_diskname_randread), mode="wb") as file_handle_randread:  # like: write-4k-nvme1n1
                 for item_conf_detail_randread in conf_for_item_randread:
                     file_handle_randread.write(item_conf_detail_randread)
 # gen conf for write_128k_2h
 for item_diskname_write128k2h in diskname_list:
     conf_for_item_write128k2h = gen_conf(item_diskname_write128k2h, "write", "128k", "7200", "128", "1", "0")
-    with open(write128k2hconf_dir + "/2h-write128k2h-128k-{}".format(item_diskname_write128k2h), mode="wb") as file_handle_write128k2h:  # like: write-4k-nvme1n1
+    with open(conf_dir + "/write128k2h" + "/2h-write128k2h-128k-{}".format(item_diskname_write128k2h), mode="wb") as file_handle_write128k2h:  # like: write-4k-nvme1n1
         for item_conf_detail_randread in conf_for_item_write128k2h:
             file_handle_write128k2h.write(item_conf_detail_randread)
 # gen conf for randwrite_4k_6h
 for item_diskname_randwrite4k6h in diskname_list:
     conf_for_item_randwrite4k6h = gen_conf(item_diskname_randwrite4k6h, "randwrite", "4k", "21600", "128", "4", "0")
-    with open(randwrite4k6hconf_dir + "/6h-randwrite4k6h-4k-{}".format(item_diskname_randwrite4k6h), mode="wb") as file_handle_randwrite4k6h:  # like: write-4k-nvme1n1
+    with open(conf_dir + "randwrite4k6h" + "/6h-randwrite4k6h-4k-{}".format(item_diskname_randwrite4k6h), mode="wb") as file_handle_randwrite4k6h:  # like: write-4k-nvme1n1
         for item_conf_detail_randwrite4k6h in conf_for_item_randwrite4k6h:
             file_handle_randwrite4k6h.write(item_conf_detail_randwrite4k6h)
 

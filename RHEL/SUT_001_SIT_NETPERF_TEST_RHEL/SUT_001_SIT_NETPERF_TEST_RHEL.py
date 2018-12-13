@@ -15,7 +15,8 @@ import numpy
 
 current_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(current_path)
-time_start = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+time_start_temp = time.localtime(time.time())
+time_start = time.strftime('%Y%m%d%H%M%S', time_start_temp)
 log_dir_name = time_start + "_SIT_NETPERF_TEST_RHEL"
 log_file_name = time_start + "_SIT_NETPERF_TEST_RHEL.log"
 log_path_temp = current_path + "/log"
@@ -212,9 +213,10 @@ data_string = json.dumps(tc_result, sort_keys=True, indent=4)
 result.write("Below is the status check!" + os.linesep)
 result.write(data_string + os.linesep)
 
-time_end = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
-print("End Net Perf test!Start time %s" % time_end)
-result.write("End Net Perf test!Start time %s" % time_end + os.linesep)
+end_time_temp = time.localtime(time.time())
+end_time = time.strftime('%Y-%m-%d %H:%M:%S', end_time_temp)
+print("End Net Perf test!End time {}".format(end_time))
+result.write("End Net Perf test!End time {}".format(end_time) + os.linesep)
 result.close()
 sys.exit(0)
 
