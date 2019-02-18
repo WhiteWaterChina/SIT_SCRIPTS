@@ -11,6 +11,7 @@ import matplotlib.pyplot as plyt
 import paramiko
 import json
 import numpy
+import argparse
 
 
 def plot_image(log_path_sub, figure_title, filepath_to_save):
@@ -64,6 +65,77 @@ def plot_image(log_path_sub, figure_title, filepath_to_save):
     time.sleep(1)
     figure_1.savefig(filepath_to_save)
 
+
+def calculate_threads(device_name):
+    # calculate N
+    speed_now_list = subprocess.Popen(
+        "ethtool {}|grep Speed|awk -F ':' '{{print $2}}'|awk '{{match($0,/([0-9]+)/,a);print a[1]}}'".format(
+            device_name), shell=True, stdout=subprocess.PIPE)
+    speed_now_list.wait()
+    speed_now = speed_now_list.stdout.readlines()[0].strip()
+
+    if speed_now == "10000":
+        threads_number = 2
+    elif speed_now == "25000":
+        threads_number = 3
+    elif speed_now == "40000":
+        threads_number = 5
+    elif speed_now == "100000":
+        threads_number = 10
+    else:
+        threads_number = 4
+    return threads_number
+
+
+def root_arg():
+    parser = argparse.ArgumentParser(description="Script to test network card two way!")
+    parser.add_argument('--ip', '-ip', required=True, type=str, dest='client_ctrl_ip',
+                        help="The ip of the control client, must can be connected to SUT")
+    parser.add_argument('--username', '-u', default='root', type=str, dest='client_username',
+                        help="The username of the control client, default is root")
+    parser.add_argument('--password', '-p', default='111111', type=str, dest='client_password',
+                        help="The password of the control client, default is 111111")
+    parser.add_argument('--client', required=True, type=str, dest='client_devicenames',
+                        help="The list of the NIC device names on client,must split by ';'. For expmple: eno1;eno2;")
+    parser.add_argument('--sut', required=True, type=str, dest='sut_devicenames',
+                        help="The list of the NIC device names on SUT, must split by ';'. For expmple: eno1;eno2;")
+    parser.add_argument('--time', '-t', required=True, type=int, dest='test_time', help="The total time of the test")
+    input_arg_sub = parser.parse_args()
+    return input_arg_sub
+
+
+def check_iperf(destination, ssh_client, client_ip, client_username_sub, client_password_sub):
+    if destination == "local":
+        retcode_check_iperf_local = subprocess.Popen("which iperf3", shell=True, stdout=subprocess.PIPE)
+        retcode_check_iperf_local.wait()
+        if retcode_check_iperf_local.returncode != 0:
+            return ["Pls install iperf3 for local", retcode_check_iperf_local.returncode]
+        reccode_check_iperf_ver_local = subprocess.Popen("iperf3 -h|grep forceflush", shell=True,
+                                                         stdout=subprocess.PIPE)
+        reccode_check_iperf_ver_local.wait()
+        if reccode_check_iperf_ver_local.returncode != 0:
+            return ["Pls install iperf3 with parameter 'forceflush' for local. For example:iperf-3.3",
+                    reccode_check_iperf_ver_local.returncode]
+        return ["Check iperf3 for local pass!", 0]
+    elif destination == "remote":
+        ssh_client.connect(client_ip, 22, username=client_username_sub, password=client_password_sub)
+        stdin_1, stdout_1, stderr_1 = ssh_client.exec_command(command="which iperf3")
+        if stdout_1.channel.recv_exit_status() != 0:
+            ssh_client.close()
+            return ["Pls install iperf3 for remote", stdout_1.channel.recv_exit_status()]
+        else:
+            ssh_client.close()
+            ssh_client.connect(client_ip, 22, username=client_username_sub, password=client_password_sub)
+        stdin_2, stdout_2, stderr_2 = ssh_client.exec_command(command="iperf3 -h|grep forceflush")
+        if stdout_2.channel.recv_exit_status() != 0:
+            ssh_client.close()
+            return ["Pls install iperf3 with parameter 'forceflush' for remote. For example:iperf-3.3",
+                    stdout_2.channel.recv_exit_status()]
+        else:
+            ssh_client.close()
+        return ["Check iperf3 for remote pass!", 0]
+
+
 current_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(current_path)
 time_start = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
@@ -81,21 +153,13 @@ result = open(log_path, mode="w")
 result.write("Begin net stress test!Start time %s" % time_start + os.linesep)
 print("Begin net stress test!Start time %s" % time_start)
 
-if len(sys.argv) != 7:
-    print("Input length is incorrect!")
-    print("Usage:%s client_ctrl_ip client_username client_password sut_devicename_list client_devicename_list test_time" % sys.argv[0])
-    result.write("Input length is incorrect!" + os.linesep)
-    result.write("Usage:%s client_ctrl_ip client_username client_password sut_devicename_list client_devicename_list test_time" % sys.argv[0] + os.linesep)
-    result.close()
-    sys.exit(255)
-
-client_ctrl_ip = sys.argv[1]
-client_username = sys.argv[2]
-client_password = sys.argv[3]
-sut_devicenames = sys.argv[4]
-client_devicenames = sys.argv[5]
-# threads_number = sys.argv[6]
-test_time = sys.argv[6]
+input_arg = root_arg()
+client_ctrl_ip = input_arg.client_ctrl_ip
+client_username = input_arg.client_username
+client_password = input_arg.client_password
+sut_devicenames = input_arg.sut_devicenames
+client_devicenames = input_arg.client_devicenames
+test_time = input_arg.test_time
 
 # test input list length
 sut_devicename_list_temp = sut_devicenames.split(";")
@@ -125,21 +189,22 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     if not os.path.isdir(SutDevicePath):
         os.makedirs(SutDevicePath)
 
-    # calculate N
-    speed_now_list = subprocess.Popen("ethtool %s|grep Speed|awk -F ':' '{print $2}'|awk '{match($0,/([0-9]+)/,a);print a[1]}'" % sut_devicename, shell=True, stdout=subprocess.PIPE)
-    speed_now_list.wait()
-    speed_now = speed_now_list.stdout.readlines()[0].strip()
-
-    if speed_now == "10000":
-        N = 2
-    elif speed_now == "25000":
-        N = 3
-    elif speed_now == "40000":
-        N = 5
-    elif speed_now == "100000":
-        N = 10
-    else:
-        N = 4
+    # # calculate N
+    # speed_now_list = subprocess.Popen("ethtool %s|grep Speed|awk -F ':' '{print $2}'|awk '{match($0,/([0-9]+)/,a);print a[1]}'" % sut_devicename, shell=True, stdout=subprocess.PIPE)
+    # speed_now_list.wait()
+    # speed_now = speed_now_list.stdout.readlines()[0].strip()
+    #
+    # if speed_now == "10000":
+    #     N = 2
+    # elif speed_now == "25000":
+    #     N = 3
+    # elif speed_now == "40000":
+    #     N = 5
+    # elif speed_now == "100000":
+    #     N = 10
+    # else:
+    #     N = 4
+    threads_iperf = calculate_threads(sut_devicename)
 
     logname_result_iperf_sut = SutDevicePath + "/" + "result_iperf_sut_%s.txt" % test_time
     log_result = open(logname_result_iperf_sut, mode="wb")
@@ -151,7 +216,7 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     ssh_to_client.close()
 
     # iperf -c in sut
-    subprocess.Popen("iperf -c %s -t %s -i 5 -w 256k -P %s |grep -i sum" % (client_test_ip, test_time, N), shell=True, stdout=log_result, bufsize=1)
+    subprocess.Popen("iperf -c {} -t {} -i 5 -w 256k -P {} >> {} &".format(client_test_ip, test_time, threads_iperf, log_result), shell=True, bufsize=0, universal_newlines=True)
 
 
 # test if iperf ended in sut
@@ -175,21 +240,22 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     if not os.path.isdir(SutDevicePath):
         os.makedirs(SutDevicePath)
 
-    # calculate N
-    speed_now_list = subprocess.Popen("ethtool %s|grep Speed|awk -F ':' '{print $2}'|awk '{match($0,/([0-9]+)/,a);print a[1]}'" % sut_devicename, shell=True, stdout=subprocess.PIPE)
-    speed_now_list.wait()
-    speed_now = speed_now_list.stdout.readlines()[0].strip()
-
-    if speed_now == "10000":
-        N = 2
-    elif speed_now == "25000":
-        N = 3
-    elif speed_now == "40000":
-        N = 5
-    elif speed_now == "100000":
-        N = 10
-    else:
-        N = 4
+    # # calculate N
+    # speed_now_list = subprocess.Popen("ethtool %s|grep Speed|awk -F ':' '{print $2}'|awk '{match($0,/([0-9]+)/,a);print a[1]}'" % sut_devicename, shell=True, stdout=subprocess.PIPE)
+    # speed_now_list.wait()
+    # speed_now = speed_now_list.stdout.readlines()[0].strip()
+    #
+    # if speed_now == "10000":
+    #     N = 2
+    # elif speed_now == "25000":
+    #     N = 3
+    # elif speed_now == "40000":
+    #     N = 5
+    # elif speed_now == "100000":
+    #     N = 10
+    # else:
+    #     N = 4
+    threads_iperf_1800 = calculate_threads(sut_devicename)
 
     logname_result_iperf_sut = SutDevicePath + "/" + "result_iperf_sut_1800.txt"
     log_result = open(logname_result_iperf_sut, mode="wb")
@@ -201,7 +267,7 @@ for index_sut_devicename, sut_devicename in enumerate(sut_devicename_list):
     ssh_to_client.close()
 
     # iperf -c in sut
-    subprocess.Popen("iperf -c %s -t 1800 -i 5 -w 256k -P %s |grep -i sum" % (client_test_ip, N), shell=True, stdout=log_result, bufsize=1)
+    subprocess.Popen("iperf -c {} -t 1800 -i 5 -w 256k -P {} >> {} &".format(client_test_ip, threads_iperf_1800, log_result), shell=True, bufsize=0, universal_newlines=True)
 
 
 # test if iperf ended in sut
